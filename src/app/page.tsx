@@ -5,7 +5,7 @@ import {
   TrendingUp, TrendingDown, Target, AlertTriangle, BarChart3,
   Activity, ArrowUpRight, ArrowDownRight, Shield, Zap, Calendar,
   ChevronUp, ChevronDown, Info, RefreshCw, DollarSign, Clock,
-  Layers, Calculator, BookOpen, AlertCircle
+  Layers, Calculator, BookOpen, AlertCircle, Sun, Moon, Newspaper
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
@@ -13,6 +13,9 @@ import {
   ComposedChart, Area, AreaChart
 } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Input } from '@/components/ui/input';
+import { Slider } from '@/components/ui/slider';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // Types
 interface BacktestData {
@@ -165,6 +168,20 @@ interface QuoteData {
   timestamp: string;
 }
 
+interface NewsItem {
+  headline: string;
+  source: string;
+  date: string;
+  snippet: string;
+  url?: string;
+}
+
+interface NewsData {
+  items: NewsItem[];
+  source: 'live' | 'fallback';
+  timestamp: string;
+}
+
 // Color constants
 const COLORS = {
   positive: '#22c55e',
@@ -190,6 +207,22 @@ const QUARTER_COLORS: Record<string, string> = {
   Q4: COLORS.q4,
 };
 
+const LIGHT_CHART_COLORS = {
+  grid: '#e5e7eb',
+  text: '#9ca3af',
+  tooltipBg: '#ffffff',
+  tooltipBorder: '#e5e7eb',
+  divider: '#e5e7eb',
+};
+
+const DARK_CHART_COLORS = {
+  grid: '#333',
+  text: '#aaa',
+  tooltipBg: '#2a2a3e',
+  tooltipBorder: '#3a3a4e',
+  divider: '#555',
+};
+
 type TabId = 'overview' | 'levels' | 'variations' | 'forecast' | 'methodology';
 
 // Tab transition animation variants
@@ -200,12 +233,13 @@ const tabVariants = {
 };
 
 // Chart card wrapper with gradient top border
-function ChartCard({ title, subtitle, children, gradientFrom = 'cyan', gradientTo = 'purple' }: {
+function ChartCard({ title, subtitle, children, gradientFrom = 'cyan', gradientTo = 'purple', isDark = false }: {
   title: string;
   subtitle?: string;
   children: React.ReactNode;
   gradientFrom?: string;
   gradientTo?: string;
+  isDark?: boolean;
 }) {
   const gradientMap: Record<string, string> = {
     cyan: '#06b6d4',
@@ -217,7 +251,7 @@ function ChartCard({ title, subtitle, children, gradientFrom = 'cyan', gradientT
   };
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
+    <div className="rounded-xl border border-border bg-card overflow-hidden" style={isDark ? { backgroundColor: '#1a1a2e', borderColor: '#2a2a3e' } : undefined}>
       <div
         className="h-1"
         style={{
@@ -236,12 +270,12 @@ function ChartCard({ title, subtitle, children, gradientFrom = 'cyan', gradientT
 }
 
 // Section divider with gradient
-function SectionDivider() {
+function SectionDivider({ isDark = false }: { isDark?: boolean } = {}) {
   return (
     <div
       className="h-px w-full my-2"
       style={{
-        background: 'linear-gradient(to right, transparent, #e5e7eb, transparent)',
+        background: `linear-gradient(to right, transparent, ${isDark ? DARK_CHART_COLORS.divider : LIGHT_CHART_COLORS.divider}, transparent)`,
       }}
     />
   );
@@ -252,6 +286,8 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [quote, setQuote] = useState<QuoteData | null>(null);
+  const [news, setNews] = useState<NewsData | null>(null);
+  const [isDark, setIsDark] = useState(false);
   const mainRef = useRef<HTMLDivElement>(null);
 
   const fetchData = useCallback(async () => {
@@ -277,12 +313,36 @@ export default function Home() {
     }
   }, []);
 
+  const fetchNews = useCallback(async () => {
+    try {
+      const res = await fetch('/api/news');
+      const json = await res.json();
+      setNews(json);
+    } catch {
+      // silently fail
+    }
+  }, []);
+
+  // Dark mode effect
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDark]);
+
   useEffect(() => {
     fetchData();
     fetchQuote();
+    fetchNews();
     const interval = setInterval(fetchQuote, 60_000);
-    return () => clearInterval(interval);
-  }, [fetchData, fetchQuote]);
+    const newsInterval = setInterval(fetchNews, 300_000);
+    return () => {
+      clearInterval(interval);
+      clearInterval(newsInterval);
+    };
+  }, [fetchData, fetchQuote, fetchNews]);
 
   // Scroll to top on tab change
   const handleTabChange = useCallback((tab: TabId) => {
@@ -493,6 +553,15 @@ export default function Home() {
               <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground font-medium">
                 2:1 R:R
               </span>
+              <motion.button
+                onClick={() => setIsDark(!isDark)}
+                className="h-8 w-8 rounded-lg border border-border flex items-center justify-center hover:bg-muted transition-colors"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {isDark ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-muted-foreground" />}
+              </motion.button>
             </div>
           </div>
         </div>
@@ -582,12 +651,13 @@ export default function Home() {
                 drawdownData={drawdownData}
                 adrDistributionData={adrDistributionData}
                 currentAdr5={currentAdr5}
+                isDark={isDark}
               />
             </motion.div>
           )}
           {activeTab === 'levels' && (
             <motion.div key="levels" variants={tabVariants} initial="hidden" animate="visible" exit="exit">
-              <LevelsTab data={data} />
+              <LevelsTab data={data} isDark={isDark} />
             </motion.div>
           )}
           {activeTab === 'variations' && (
@@ -597,7 +667,7 @@ export default function Home() {
           )}
           {activeTab === 'forecast' && (
             <motion.div key="forecast" variants={tabVariants} initial="hidden" animate="visible" exit="exit">
-              <ForecastTab data={data} quote={quote} />
+              <ForecastTab data={data} quote={quote} news={news} isDark={isDark} />
             </motion.div>
           )}
           {activeTab === 'methodology' && (
@@ -667,7 +737,7 @@ interface DrawdownInfo {
   drawdownCurve: { date: string; drawdown: number; equity: number }[];
 }
 
-function OverviewTab({ data, levelChartData, quarterChartData, monthlyChartData, equitySampled, drawdownData, adrDistributionData, currentAdr5 }: {
+function OverviewTab({ data, levelChartData, quarterChartData, monthlyChartData, equitySampled, drawdownData, adrDistributionData, currentAdr5, isDark = false }: {
   data: BacktestData;
   levelChartData: { name: string; winRate: number; expectancy: number; kelly: number; trades: number; positive: boolean; direction: string }[];
   quarterChartData: { name: string; winRate: number; longWR: number; shortWR: number; expectancy: number; trades: number }[];
@@ -676,20 +746,23 @@ function OverviewTab({ data, levelChartData, quarterChartData, monthlyChartData,
   drawdownData: DrawdownInfo;
   adrDistributionData: { range: string; count: number; midpoint: number }[];
   currentAdr5: number;
+  isDark?: boolean;
 }) {
+  const cc = isDark ? DARK_CHART_COLORS : LIGHT_CHART_COLORS;
+
   return (
     <div className="space-y-6">
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <ChartCard title="Win Rate by Level" subtitle="Breakeven threshold: 33.3% for 2:1 R:R" gradientFrom="cyan" gradientTo="purple">
+        <ChartCard title="Win Rate by Level" subtitle="Breakeven threshold: 33.3% for 2:1 R:R" gradientFrom="cyan" gradientTo="purple" isDark={isDark}>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={levelChartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="name" tick={{ fontSize: 10 }} stroke="#9ca3af" />
-                <YAxis tick={{ fontSize: 10 }} stroke="#9ca3af" domain={[0, 40]} />
+                <CartesianGrid strokeDasharray="3 3" stroke={cc.grid} />
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} stroke={cc.text} />
+                <YAxis tick={{ fontSize: 10 }} stroke={cc.text} domain={[0, 40]} />
                 <RechartsTooltip
-                  contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '12px' }}
+                  contentStyle={{ background: cc.tooltipBg, border: `1px solid ${cc.tooltipBorder}`, borderRadius: '8px', fontSize: '12px', color: isDark ? '#e0e0e0' : undefined }}
                   formatter={(value: number) => [`${value}%`, 'Win Rate']}
                 />
                 <ReferenceLine y={33.3} stroke="#ef4444" strokeDasharray="5 5" label={{ value: 'Breakeven 33.3%', position: 'right', fontSize: 10, fill: '#ef4444' }} />
@@ -703,15 +776,15 @@ function OverviewTab({ data, levelChartData, quarterChartData, monthlyChartData,
           </div>
         </ChartCard>
 
-        <ChartCard title="Expectancy by Level" subtitle="Expected P&L per trade in ADR quarters" gradientFrom="purple" gradientTo="orange">
+        <ChartCard title="Expectancy by Level" subtitle="Expected P&L per trade in ADR quarters" gradientFrom="purple" gradientTo="orange" isDark={isDark}>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={levelChartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="name" tick={{ fontSize: 10 }} stroke="#9ca3af" />
-                <YAxis tick={{ fontSize: 10 }} stroke="#9ca3af" />
+                <CartesianGrid strokeDasharray="3 3" stroke={cc.grid} />
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} stroke={cc.text} />
+                <YAxis tick={{ fontSize: 10 }} stroke={cc.text} />
                 <RechartsTooltip
-                  contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '12px' }}
+                  contentStyle={{ background: cc.tooltipBg, border: `1px solid ${cc.tooltipBorder}`, borderRadius: '8px', fontSize: '12px', color: isDark ? '#e0e0e0' : undefined }}
                   formatter={(value: number) => [`${value > 0 ? '+' : ''}${value.toFixed(4)}`, 'Expectancy']}
                 />
                 <ReferenceLine y={0} stroke="#f59e0b" strokeDasharray="3 3" />
@@ -728,15 +801,15 @@ function OverviewTab({ data, levelChartData, quarterChartData, monthlyChartData,
 
       {/* Second Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <ChartCard title="Long vs Short Win Rate by Quarter" subtitle="Comparing directional performance" gradientFrom="green" gradientTo="red">
+        <ChartCard title="Long vs Short Win Rate by Quarter" subtitle="Comparing directional performance" gradientFrom="green" gradientTo="red" isDark={isDark}>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={quarterChartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="#9ca3af" />
-                <YAxis tick={{ fontSize: 10 }} stroke="#9ca3af" domain={[0, 35]} />
+                <CartesianGrid strokeDasharray="3 3" stroke={cc.grid} />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke={cc.text} />
+                <YAxis tick={{ fontSize: 10 }} stroke={cc.text} domain={[0, 35]} />
                 <RechartsTooltip
-                  contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '12px' }}
+                  contentStyle={{ background: cc.tooltipBg, border: `1px solid ${cc.tooltipBorder}`, borderRadius: '8px', fontSize: '12px', color: isDark ? '#e0e0e0' : undefined }}
                 />
                 <ReferenceLine y={33.3} stroke="#ef4444" strokeDasharray="5 5" />
                 <Bar dataKey="longWR" name="Long" fill={COLORS.up} radius={[3, 3, 0, 0]} fillOpacity={0.8} />
@@ -747,15 +820,15 @@ function OverviewTab({ data, levelChartData, quarterChartData, monthlyChartData,
           </div>
         </ChartCard>
 
-        <ChartCard title="Monthly Win Rate Trend" subtitle="Strategy performance over time" gradientFrom="cyan" gradientTo="amber">
+        <ChartCard title="Monthly Win Rate Trend" subtitle="Strategy performance over time" gradientFrom="cyan" gradientTo="amber" isDark={isDark}>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={monthlyChartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="name" tick={{ fontSize: 9 }} stroke="#9ca3af" interval={1} />
-                <YAxis tick={{ fontSize: 10 }} stroke="#9ca3af" domain={[0, 50]} />
+                <CartesianGrid strokeDasharray="3 3" stroke={cc.grid} />
+                <XAxis dataKey="name" tick={{ fontSize: 9 }} stroke={cc.text} interval={1} />
+                <YAxis tick={{ fontSize: 10 }} stroke={cc.text} domain={[0, 50]} />
                 <RechartsTooltip
-                  contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '12px' }}
+                  contentStyle={{ background: cc.tooltipBg, border: `1px solid ${cc.tooltipBorder}`, borderRadius: '8px', fontSize: '12px', color: isDark ? '#e0e0e0' : undefined }}
                   labelFormatter={(label: string) => {
                     const item = monthlyChartData.find(m => m.name === label);
                     return item?.full || label;
@@ -769,10 +842,10 @@ function OverviewTab({ data, levelChartData, quarterChartData, monthlyChartData,
         </ChartCard>
       </div>
 
-      <SectionDivider />
+      <SectionDivider isDark={isDark} />
 
       {/* Equity Curve */}
-      <ChartCard title="Equity Curve (2% Risk Per Trade)" subtitle="Starting capital: $10,000" gradientFrom="amber" gradientTo="red">
+      <ChartCard title="Equity Curve (2% Risk Per Trade)" subtitle="Starting capital: $10,000" gradientFrom="amber" gradientTo="red" isDark={isDark}>
         <div className="flex items-center justify-between mb-2">
           <div />
           <div className="text-right">
@@ -785,11 +858,11 @@ function OverviewTab({ data, levelChartData, quarterChartData, monthlyChartData,
         <div className="h-48">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={equitySampled} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="date" tick={{ fontSize: 9 }} stroke="#9ca3af" interval={Math.floor(equitySampled.length / 6)} />
-              <YAxis tick={{ fontSize: 9 }} stroke="#9ca3af" domain={[0, 12000]} />
+              <CartesianGrid strokeDasharray="3 3" stroke={cc.grid} />
+              <XAxis dataKey="date" tick={{ fontSize: 9 }} stroke={cc.text} interval={Math.floor(equitySampled.length / 6)} />
+              <YAxis tick={{ fontSize: 9 }} stroke={cc.text} domain={[0, 12000]} />
               <RechartsTooltip
-                contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '12px' }}
+                contentStyle={{ background: cc.tooltipBg, border: `1px solid ${cc.tooltipBorder}`, borderRadius: '8px', fontSize: '12px', color: isDark ? '#e0e0e0' : undefined }}
                 formatter={(value: number) => [`$${value.toLocaleString()}`, 'Equity']}
               />
               <ReferenceLine y={10000} stroke="#f59e0b" strokeDasharray="5 5" label={{ value: 'Start: $10K', position: 'right', fontSize: 9, fill: '#f59e0b' }} />
@@ -800,7 +873,7 @@ function OverviewTab({ data, levelChartData, quarterChartData, monthlyChartData,
         </div>
       </ChartCard>
 
-      <SectionDivider />
+      <SectionDivider isDark={isDark} />
 
       {/* Drawdown Analysis */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -848,36 +921,36 @@ function OverviewTab({ data, levelChartData, quarterChartData, monthlyChartData,
       </div>
 
       {/* Drawdown Curve */}
-      <ChartCard title="Drawdown Curve" subtitle="Peak-to-trough decline percentage over time" gradientFrom="red" gradientTo="amber">
+      <ChartCard title="Drawdown Curve" subtitle="Peak-to-trough decline percentage over time" gradientFrom="red" gradientTo="amber" isDark={isDark}>
         <div className="h-40">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={drawdownData.drawdownCurve} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="date" tick={{ fontSize: 8 }} stroke="#9ca3af" interval={Math.floor(drawdownData.drawdownCurve.length / 6)} />
-              <YAxis tick={{ fontSize: 9 }} stroke="#9ca3af" />
+              <CartesianGrid strokeDasharray="3 3" stroke={cc.grid} />
+              <XAxis dataKey="date" tick={{ fontSize: 8 }} stroke={cc.text} interval={Math.floor(drawdownData.drawdownCurve.length / 6)} />
+              <YAxis tick={{ fontSize: 9 }} stroke={cc.text} />
               <RechartsTooltip
-                contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '12px' }}
+                contentStyle={{ background: cc.tooltipBg, border: `1px solid ${cc.tooltipBorder}`, borderRadius: '8px', fontSize: '12px', color: isDark ? '#e0e0e0' : undefined }}
                 formatter={(value: number) => [`${Math.abs(value).toFixed(1)}%`, 'Drawdown']}
               />
-              <ReferenceLine y={0} stroke="#9ca3af" strokeDasharray="2 2" />
+              <ReferenceLine y={0} stroke={cc.text} strokeDasharray="2 2" />
               <Area type="monotone" dataKey="drawdown" stroke="#ef4444" fill="#ef4444" fillOpacity={0.15} strokeWidth={1.5} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
       </ChartCard>
 
-      <SectionDivider />
+      <SectionDivider isDark={isDark} />
 
       {/* ADR Distribution Chart */}
-      <ChartCard title="ADR₅ Distribution" subtitle="Histogram of 5-day ADR values (current vs historical)" gradientFrom="cyan" gradientTo="green">
+      <ChartCard title="ADR₅ Distribution" subtitle="Histogram of 5-day ADR values (current vs historical)" gradientFrom="cyan" gradientTo="green" isDark={isDark}>
         <div className="h-56">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={adrDistributionData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="range" tick={{ fontSize: 9 }} stroke="#9ca3af" />
-              <YAxis tick={{ fontSize: 10 }} stroke="#9ca3af" />
+              <CartesianGrid strokeDasharray="3 3" stroke={cc.grid} />
+              <XAxis dataKey="range" tick={{ fontSize: 9 }} stroke={cc.text} />
+              <YAxis tick={{ fontSize: 10 }} stroke={cc.text} />
               <RechartsTooltip
-                contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '12px' }}
+                contentStyle={{ background: cc.tooltipBg, border: `1px solid ${cc.tooltipBorder}`, borderRadius: '8px', fontSize: '12px', color: isDark ? '#e0e0e0' : undefined }}
                 formatter={(value: number) => [`${value} trades`, 'Count']}
                 labelFormatter={(label: string) => `ADR: ${label} pts`}
               />
@@ -899,7 +972,7 @@ function OverviewTab({ data, levelChartData, quarterChartData, monthlyChartData,
   );
 }
 
-function LevelsTab({ data }: { data: BacktestData }) {
+function LevelsTab({ data, isDark = false }: { data: BacktestData; isDark?: boolean }) {
   return (
     <div className="space-y-6">
       {/* Level Breakdown Table */}
@@ -971,6 +1044,9 @@ function LevelsTab({ data }: { data: BacktestData }) {
           </table>
         </div>
       </div>
+
+      {/* Confluence Heat Map */}
+      <ConfluenceHeatMap data={data} isDark={isDark} />
 
       {/* Outcome Breakdown */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1204,12 +1280,15 @@ function VariationsTab({ data }: { data: BacktestData }) {
   );
 }
 
-function ForecastTab({ data, quote }: { data: BacktestData; quote: QuoteData | null }) {
+function ForecastTab({ data, quote, news, isDark = false }: { data: BacktestData; quote: QuoteData | null; news: NewsData | null; isDark?: boolean }) {
   const forecast = data.forecast;
   const refOpen = forecast.reference_open;
 
   return (
     <div className="space-y-6">
+      {/* Market News */}
+      <MarketNews news={news} />
+
       {/* Risk Warning */}
       <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4">
         <div className="flex items-start gap-3">
@@ -1382,6 +1461,284 @@ function ForecastTab({ data, quote }: { data: BacktestData; quote: QuoteData | n
         </div>
         <div className="rounded-lg bg-muted/30 p-4 text-sm text-muted-foreground leading-relaxed whitespace-pre-line font-mono text-xs">
           {forecast.recommendation}
+        </div>
+      </div>
+
+      {/* Trade Simulator */}
+      <TradeSimulator data={data} />
+    </div>
+  );
+}
+
+// ====== METHODOLOGY TAB ======
+
+// ====== CONFLUENCE HEAT MAP ======
+function ConfluenceHeatMap({ data, isDark = false }: { data: BacktestData; isDark?: boolean }) {
+  const levels = data.level_breakdown;
+
+  const confluenceData = levels.map(l => {
+    const winRateScore = (l.win_rate / 100) * 40;
+    const expectancyScore = Math.max(0, l.expectancy) * 30;
+    const sampleScore = Math.min(l.total_trades / 300, 1) * 30;
+    const raw = winRateScore + expectancyScore + sampleScore;
+    const score = Math.round(Math.min(100, Math.max(0, raw)));
+    return {
+      name: l.level.replace('_', ' '),
+      direction: l.direction,
+      quarter: l.quarter,
+      score,
+      winRate: l.win_rate,
+      expectancy: l.expectancy,
+      totalTrades: l.total_trades,
+    };
+  });
+
+  const getColor = (score: number): string => {
+    if (score >= 66) return '#22c55e';
+    if (score >= 50) return '#f59e0b';
+    if (score >= 33) return '#f97316';
+    return '#ef4444';
+  };
+
+  const getBgOpacity = (score: number): number => {
+    return 0.15 + (score / 100) * 0.25;
+  };
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+      <div className="flex items-center gap-2">
+        <BarChart3 className="h-4 w-4 text-cyan-500" />
+        <div>
+          <h3 className="font-semibold text-sm">Confluence Heat Map</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Combined score: win rate (40%) + expectancy (30%) + sample size (30%)</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {confluenceData.map(item => (
+          <motion.div
+            key={item.name}
+            className="rounded-lg border p-3 text-center space-y-1.5"
+            style={{
+              borderColor: getColor(item.score),
+              backgroundColor: `${getColor(item.score)}${Math.round(getBgOpacity(item.score) * 255).toString(16).padStart(2, '0')}`,
+            }}
+            whileHover={{ scale: 1.03 }}
+            transition={{ duration: 0.15 }}
+          >
+            <p className="text-[10px] font-medium text-muted-foreground">{item.name}</p>
+            <p className="text-2xl font-bold" style={{ color: getColor(item.score) }}>{item.score}</p>
+            <div className="flex flex-col gap-0.5 text-[9px] text-muted-foreground">
+              <span>WR: {item.winRate}%</span>
+              <span>Exp: {item.expectancy > 0 ? '+' : ''}{item.expectancy.toFixed(4)}</span>
+              <span>N: {item.totalTrades}</span>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+      <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-500" />High (66+)</span>
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-500" />Medium (50-65)</span>
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-orange-500" />Low (33-49)</span>
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-500" />Poor (&lt;33)</span>
+      </div>
+    </div>
+  );
+}
+
+// ====== MARKET NEWS ======
+function MarketNews({ news }: { news: NewsData | null }) {
+  if (!news) return null;
+
+  const formatTime = (dateStr: string): string => {
+    try {
+      const date = new Date(dateStr);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffMins = Math.floor(diffMs / 60_000);
+      if (diffMins < 60) return `${diffMins}m ago`;
+      const diffHours = Math.floor(diffMins / 60);
+      if (diffHours < 24) return `${diffHours}h ago`;
+      return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    } catch {
+      return '';
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Newspaper className="h-4 w-4 text-cyan-500" />
+          <h3 className="font-semibold text-sm">Market News</h3>
+        </div>
+        <div className="flex items-center gap-1.5 text-[10px]">
+          <span className={`h-1.5 w-1.5 rounded-full ${news.source === 'live' ? 'bg-green-500' : 'bg-amber-500'}`} />
+          <span className="text-muted-foreground font-medium">{news.source === 'live' ? 'Live' : 'Cached'}</span>
+        </div>
+      </div>
+      <div className="max-h-64 overflow-y-auto space-y-2 pr-1" style={{ scrollbarWidth: 'thin' }}>
+        {news.items.map((item, i) => (
+          <div
+            key={i}
+            className="rounded-lg border-l-[3px] border-l-cyan-500 bg-muted/20 p-3 space-y-1 hover:bg-muted/30 transition-colors"
+          >
+            <p className="text-sm font-medium leading-snug">{item.headline}</p>
+            {item.snippet && <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{item.snippet}</p>}
+            <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+              <span className="font-medium">{item.source}</span>
+              <span>·</span>
+              <span>{formatTime(item.date)}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ====== TRADE SIMULATOR ======
+function TradeSimulator({ data }: { data: BacktestData }) {
+  const [accountSize, setAccountSize] = useState(10000);
+  const [riskPct, setRiskPct] = useState(2);
+  const [selectedLevel, setSelectedLevel] = useState(data.forecast.forecast_details[0]?.level || 'Q1_Up');
+
+  const forecastDetail = data.forecast.forecast_details.find(f => f.level === selectedLevel);
+  const levelStat = data.level_breakdown.find(l => l.level === selectedLevel);
+
+  const winRate = forecastDetail?.win_rate ?? levelStat?.win_rate ?? 0;
+  const expectancy = forecastDetail?.expectancy ?? levelStat?.expectancy ?? 0;
+  const kellyPct = forecastDetail?.kelly_pct ?? levelStat?.kelly_pct ?? 0;
+  const direction = forecastDetail?.direction ?? (selectedLevel.includes('Up') ? 'Long' : 'Short');
+
+  const quarterSize = data.forecast.quarter_size;
+  const riskAmount = accountSize * (riskPct / 100);
+  // For US30, each point = $1 per contract (micro) or $5 (standard). We use micro.
+  const slDistance = quarterSize; // 1 quarter stop
+  const contracts = slDistance > 0 ? Math.floor(riskAmount / slDistance) : 0;
+  const rewardAmount = contracts * quarterSize * 2; // 2:1 R:R
+  const expectedValue = (winRate / 100) * rewardAmount - (1 - winRate / 100) * riskAmount;
+  const recommendedKelly = Math.max(0, kellyPct);
+
+  const quality = expectedValue > 0 ? 'green' : expectedValue > -riskAmount * 0.2 ? 'amber' : 'red';
+  const qualityLabel = expectedValue > 0 ? 'Positive' : expectedValue > -riskAmount * 0.2 ? 'Marginal' : 'Negative';
+  const qualityColor = quality === 'green' ? '#22c55e' : quality === 'amber' ? '#f59e0b' : '#ef4444';
+
+  const levelOptions = data.forecast.forecast_details.map(fd => fd.level);
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-5 space-y-5">
+      <div className="flex items-center gap-2">
+        <Calculator className="h-4 w-4 text-purple-500" />
+        <div>
+          <h3 className="font-semibold text-sm">Trade Simulator</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Calculate position size and expected value based on historical data</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Inputs */}
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-muted-foreground">Account Size ($)</label>
+            <Input
+              type="number"
+              value={accountSize}
+              onChange={(e) => setAccountSize(Math.max(100, Number(e.target.value) || 0))}
+              min={100}
+              step={1000}
+              className="font-mono"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-muted-foreground">Risk Per Trade: {riskPct}%</label>
+            <Slider
+              value={[riskPct]}
+              onValueChange={(v) => setRiskPct(v[0])}
+              min={0.5}
+              max={5}
+              step={0.5}
+            />
+            <div className="flex justify-between text-[10px] text-muted-foreground">
+              <span>0.5%</span>
+              <span>5%</span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-muted-foreground">Quarter Level</label>
+            <Select value={selectedLevel} onValueChange={setSelectedLevel}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {levelOptions.map(level => (
+                  <SelectItem key={level} value={level}>
+                    {level.replace('_', ' ')}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Outputs */}
+        <div className="space-y-3">
+          <div className="rounded-lg border border-border p-3 space-y-1">
+            <p className="text-xs text-muted-foreground">Direction</p>
+            <p className={`text-sm font-bold flex items-center gap-1 ${direction === 'Long' ? 'text-green-500' : 'text-red-500'}`}>
+              {direction === 'Long' ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
+              {direction}
+            </p>
+          </div>
+
+          <div className="rounded-lg border border-border p-3 space-y-1">
+            <p className="text-xs text-muted-foreground">Risk Amount</p>
+            <p className="text-lg font-bold font-mono">${riskAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+          </div>
+
+          <div className="rounded-lg border border-border p-3 space-y-1">
+            <p className="text-xs text-muted-foreground">Position Size</p>
+            <p className="text-lg font-bold font-mono">{contracts} <span className="text-xs text-muted-foreground font-normal">micro contracts</span></p>
+          </div>
+
+          <div className="rounded-lg border border-border p-3 space-y-1">
+            <p className="text-xs text-muted-foreground">Potential Reward (2:1)</p>
+            <p className="text-lg font-bold font-mono text-green-500">+${rewardAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+          </div>
+        </div>
+
+        {/* Expected Value & Quality */}
+        <div className="space-y-3">
+          <div className="rounded-lg border border-border p-3 space-y-1">
+            <p className="text-xs text-muted-foreground">Historical Win Rate</p>
+            <p className={`text-lg font-bold font-mono ${winRate >= 33.3 ? 'text-green-500' : 'text-red-500'}`}>{winRate}%</p>
+          </div>
+
+          <div className="rounded-lg border border-border p-3 space-y-1">
+            <p className="text-xs text-muted-foreground">Expected Value / Trade</p>
+            <p className={`text-lg font-bold font-mono ${expectedValue >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+              {expectedValue >= 0 ? '+' : ''}${expectedValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+            </p>
+          </div>
+
+          <div className="rounded-lg border border-border p-3 space-y-1">
+            <p className="text-xs text-muted-foreground">Recommended Kelly Size</p>
+            <p className={`text-lg font-bold font-mono ${recommendedKelly > 0 ? 'text-green-500' : 'text-red-500'}`}>{recommendedKelly}%</p>
+          </div>
+
+          <div className="rounded-lg border-2 p-3 space-y-1" style={{ borderColor: qualityColor }}>
+            <p className="text-xs text-muted-foreground">Trade Quality</p>
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-3 rounded-full" style={{ backgroundColor: qualityColor }} />
+              <p className="text-lg font-bold" style={{ color: qualityColor }}>{qualityLabel}</p>
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              {quality === 'green' ? 'Positive expectancy — historically profitable' :
+               quality === 'amber' ? 'Near breakeven — marginal edge' :
+               'Negative expectancy — historically unprofitable'}
+            </p>
+          </div>
         </div>
       </div>
     </div>
