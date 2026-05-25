@@ -201,3 +201,126 @@ Stage Summary:
 3. Add PDF/CSV export for backtest results
 4. Add comparison with other indices (SPX, NDX)
 5. Implement server-side backtest computation via API (allow parameter changes from UI)
+
+---
+Task ID: 19
+Agent: full-stack-developer
+Task: Major styling and feature upgrade round 3
+
+Work Log:
+- Read existing page.tsx (~2039 lines) and worklog.md to understand current structure
+- Implemented 7 styling improvements:
+  A. Animated Number Counters: Added useCountUp custom hook with requestAnimationFrame, ease-out cubic animation over 1.5s. Applied to 4 key stats (Total Trades, Win Rate, Expectancy, Kelly %) with proper formatting (commas, %, decimals, sign handling for negative values)
+  B. Modern Pill-Style Tab Navigation: Replaced border-bottom tabs with centered pill/segmented control using rounded-full container with bg-muted background. Active tab gets bg-primary text-primary-foreground with rounded-full and shadow-sm. Horizontally scrollable on mobile via overflow-x-auto
+  C. Glassmorphism Effect for Dark Mode: When isDark is true, card-like elements use backdrop-blur-md bg-white/5 border-white/10. Applied to StatCard, ChartCard, table containers, section cards across all tabs (Overview, Levels, Variations, Forecast, Methodology)
+  D. Decorative Background Elements: Added 3 fixed-position gradient orbs (cyan-500/5, purple-500/5, pink-500/5) with blur-3xl, hidden on mobile (lg:block only), pointer-events-none
+  E. Animated Gradient Line at Top: Added 3px gradient line above header with cyan→purple→pink→cyan animation (3s ease infinite, background-size: 200%). Header updated with backdrop-blur-md for more prominent blur
+  F. Custom Scrollbar Styling: Added .custom-scrollbar CSS class with WebKit thin scrollbar (6px width, primary color thumb with rounded corners, transparent track). Applied to trade log and news sections
+  G. Enhanced Chart Card Hover Effects: Added hover:-translate-y-0.5 hover:shadow-lg with transition-all duration-200 to ChartCard. Added subtle gradient overlay at bottom of each chart card
+- Implemented 4 new features:
+  A. Day-of-Week Performance Analysis: New DayOfWeekChart component in Overview tab. Calculates win rate and trade count from recent_trades by day of week. Horizontal BarChart with 5 bars (Mon-Fri), color-coded green (above breakeven) or red (below). Reference line at 33.3%. Trade count shown in tooltip and legend
+  B. R:R Optimizer Calculator: New RROptimizer component in Strategy Variations tab. Features: Slider (0.5-4 step 0.25), breakeven WR calculation (1/(1+RR)), gap from current WR (22.1%), visual gauge with current WR vs breakeven, minimum R:R needed calculation ((1/WR-1)), R:R impact analysis table showing all ratios, conclusion text with color coding
+  C. Radar/Spider Chart for Variation Comparison: New RadarComparisonChart component in Strategy Variations tab. Uses Recharts RadarChart with 5 dimensions (Win Rate, Expectancy, Kelly %, Return %, Sample Size). All values normalized to 0-100 scale. Each variation gets different color (cyan, orange, purple, pink). Includes Legend and Tooltip
+  D. Performance Score Card: New PerformanceScoreCard component in Overview tab. Circular SVG progress ring with framer-motion animation. Score calculated from weighted average: WR (30%), Expectancy (30%), Kelly (20%), Drawdown (20%). Color: red (0-30), amber (30-60), green (60-100). Score breakdown with animated progress bars for each component
+- Added isDark prop to VariationsTab and MethodologyTab for glassmorphism support
+- Added isDark prop to TradeSimulator for glassmorphism support
+- Added RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar to recharts imports
+- File grew from ~2039 to ~2600+ lines
+- All lint checks pass with zero errors
+- Dev server compiles and serves correctly (✓ Compiled in 319ms)
+
+Stage Summary:
+- All 7 styling improvements implemented: animated counters, pill tabs, glassmorphism, decorative orbs, gradient line, custom scrollbar, chart hover effects
+- All 4 new features implemented: Day-of-Week chart, R:R Optimizer, Radar comparison, Performance Score Card
+- Lint passes with zero errors, dev server stable
+- All existing features preserved (5 tabs, 3 API routes, dark mode, etc.)
+- Dark mode works correctly with all new components
+- No new npm packages added - used only existing dependencies
+
+---
+Task ID: 20
+Agent: Main (QA Review Round 3 + Bug Fix)
+Task: QA testing, bug fix, and comprehensive dashboard upgrade review
+
+Work Log:
+- Reviewed worklog.md for all prior project progress (Tasks 10-19)
+- Performed QA testing via agent-browser + VLM across all 5 tabs:
+  - Overview tab: Strategy Score circle (27/100 "Weak"), Win Rate by Level, Expectancy by Level, Long vs Short, Monthly Trend, Day of Week chart, Equity Curve, Drawdown Curve, ADR Distribution
+  - Level Analysis tab: Verified Edge column now correctly shows "Negative" for all levels (bug was fixed)
+  - Strategy Variations tab: 4 variation cards, R:R Ratio Optimizer with slider, Radar Comparison Chart, Recommended Modifications
+  - Weekly Forecast tab: Market News, Risk Warning, Context cards, Level Map, Forecast Table, Trade Simulator
+  - Methodology tab: 5-step walkthrough with ladder diagram
+- Fixed critical bug: `positive_edge` field in backtest_results.json was string "False" instead of boolean `false`. JavaScript treats non-empty strings as truthy, causing all Edge column entries to display "Positive" instead of "Negative". Fixed by converting all string booleans in the JSON file to proper JSON booleans using a recursive fix_booleans() function.
+- Verified animated gradient line at top of page (cyan→purple→pink→cyan, 3s animation)
+- Verified pill-style tab navigation (centered, rounded-full, bg-primary for active tab)
+- Verified glassmorphism effects in dark mode (backdrop-blur-md, bg-white/5, border-white/10)
+- Verified decorative background orbs (cyan, purple, pink at 5% opacity, blur-3xl)
+- Verified animated number counters on stat cards
+- Verified dark mode toggle working correctly
+- Verified custom scrollbar styling on trade log and news sections
+- Verified chart card hover effects (lift + shadow)
+- Lint passes with zero errors
+- Dev server stable, all API endpoints returning 200
+
+Stage Summary:
+- Critical bug fixed: positive_edge string "False" → boolean false in JSON data
+- All styling improvements verified: animated counters, pill tabs, glassmorphism, decorative orbs, gradient line, custom scrollbar, chart hover effects
+- All new features verified: Day-of-Week chart, R:R Optimizer, Radar comparison, Performance Score Card
+- Dashboard is production-ready with 2585 lines of code across 5 tabs + 3 API routes
+- No remaining bugs or visual issues
+
+## === CURRENT PROJECT STATUS (Updated) ===
+
+### Project: US30 ADR Quarter Breakout Strategy Dashboard
+### Status: Production-Ready, Feature-Complete (Round 3)
+
+### Architecture:
+- Frontend: Next.js 16 + TypeScript + Tailwind CSS 4 + shadcn/ui + Recharts + framer-motion
+- Backend: 3 API routes (/api/backtest, /api/quote, /api/news)
+- Data: 2 years of US30 daily OHLC data (499 trading days, 1452 trades)
+- File: src/app/page.tsx (2585 lines, single-file app)
+
+### Features (5 tabs):
+1. **Overview**: Strategy Score circle + 8 charts (Win Rate, Expectancy, Long vs Short, Monthly Trend, Day of Week, Equity Curve, Drawdown Curve, ADR Distribution) + key stats with animated counters + drawdown analysis cards
+2. **Level Analysis**: Breakdown table (Edge column fixed) + Confluence Heat Map + Outcome Composition + Quarter Summary + Trade Log with custom scrollbar
+3. **Strategy Variations**: 4 variation cards with equity curves + R:R Optimizer with interactive slider + Radar Comparison Chart + 6 modification recommendations
+4. **Weekly Forecast**: Market News + Risk Warning + Market Context + Visual Level Map + Forecast Table + Trade Simulator + Recommendation
+5. **Methodology**: 5-step walkthrough with visual ladder diagram and trade entry/exit diagrams
+
+### Cross-cutting Features:
+- Dark/light mode toggle with glassmorphism effects and dynamic chart colors
+- Real-time US30 price with auto-refresh (60s)
+- Market news feed with 5-min caching
+- Interactive trade simulator (account size, risk %, level selection)
+- Confluence heat map (win rate + expectancy + sample size)
+- R:R Ratio Optimizer with breakeven calculations and visual gauge
+- Performance Score Card with circular SVG ring and breakdown bars
+- Radar chart comparing 4 strategy variations across 5 dimensions
+- Day-of-week performance analysis chart
+- Framer-motion animations (tab transitions, hover effects, pulse badge, score ring)
+- Animated number counters on stat cards (useCountUp hook)
+- Animated shimmer loading skeleton
+- Pill-style tab navigation
+- Animated gradient line at page top
+- Decorative background gradient orbs
+- Custom scrollbar styling
+- Chart card hover effects (lift + shadow)
+- Smooth scroll-to-top on tab switch
+- Responsive design (mobile-first)
+
+### Bugs Fixed This Round:
+- Critical: positive_edge field was string "False" instead of boolean false, causing Edge column to show "Positive" for all levels
+
+### Unresolved Issues / Risks:
+- Finance API subscription may not be active (all 3 API endpoints use fallback data)
+- Backtest shows NO positive edge for the base strategy (22.1% WR vs 33.3% breakeven)
+- OHLC data limitation: ambiguous outcomes resolved via probability model, not tick data
+- Glassmorphism effects may be subtle in screenshots but are properly implemented in code
+
+### Priority Recommendations for Next Phase:
+1. Fetch live US30 data when Finance API subscription is activated
+2. Add PDF/CSV export for backtest results
+3. Add comparison with other indices (SPX, NDX)
+4. Implement server-side backtest computation via API (allow parameter changes from UI)
+5. Add intraday data integration for accurate path resolution
+6. Refactor page.tsx into separate component files (currently 2585 lines single file)

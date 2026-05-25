@@ -46,7 +46,7 @@
       "expectancy": -0.2722,
       "kelly_pct": 0,
       "avg_pnl_quarters": -0.2722,
-      "positive_edge": "False"
+      "positive_edge": false
     },
     {
       "level": "Q2_Up",
@@ -62,7 +62,7 @@
       "expectancy": -0.3458,
       "kelly_pct": 0,
       "avg_pnl_quarters": -0.3458,
-      "positive_edge": "False"
+      "positive_edge": false
     },
     {
       "level": "Q3_Up",
@@ -78,7 +78,7 @@
       "expectancy": -0.3475,
       "kelly_pct": 0,
       "avg_pnl_quarters": -0.3475,
-      "positive_edge": "False"
+      "positive_edge": false
     },
     {
       "level": "Q4_Up",
@@ -94,7 +94,7 @@
       "expectancy": -0.3347,
       "kelly_pct": 0,
       "avg_pnl_quarters": -0.3347,
-      "positive_edge": "False"
+      "positive_edge": false
     },
     {
       "level": "Q1_Down",
@@ -110,7 +110,7 @@
       "expectancy": -0.2537,
       "kelly_pct": 0,
       "avg_pnl_quarters": -0.2537,
-      "positive_edge": "False"
+      "positive_edge": false
     },
     {
       "level": "Q2_Down",
@@ -126,7 +126,7 @@
       "expectancy": -0.4065,
       "kelly_pct": 0,
       "avg_pnl_quarters": -0.4065,
-      "positive_edge": "False"
+      "positive_edge": false
     },
     {
       "level": "Q3_Down",
@@ -142,7 +142,7 @@
       "expectancy": -0.45,
       "kelly_pct": 0,
       "avg_pnl_quarters": -0.45,
-      "positive_edge": "False"
+      "positive_edge": false
     },
     {
       "level": "Q4_Down",
@@ -158,7 +158,7 @@
       "expectancy": -0.5968,
       "kelly_pct": 0,
       "avg_pnl_quarters": -0.5968,
-      "positive_edge": "False"
+      "positive_edge": false
     }
   ],
   "quarter_breakdown": [
@@ -172,7 +172,7 @@
       "short_trades": 331,
       "long_win_rate": 24.3,
       "short_win_rate": 24.9,
-      "positive_edge": "False"
+      "positive_edge": false
     },
     {
       "quarter": "Q2",
@@ -184,7 +184,7 @@
       "short_trades": 210,
       "long_win_rate": 21.8,
       "short_win_rate": 19.8,
-      "positive_edge": "False"
+      "positive_edge": false
     },
     {
       "quarter": "Q3",
@@ -196,7 +196,7 @@
       "short_trades": 128,
       "long_win_rate": 21.7,
       "short_win_rate": 18.3,
-      "positive_edge": "False"
+      "positive_edge": false
     },
     {
       "quarter": "Q4",
@@ -208,7 +208,7 @@
       "short_trades": 67,
       "long_win_rate": 22.2,
       "short_win_rate": 13.4,
-      "positive_edge": "False"
+      "positive_edge": false
     }
   ],
   "monthly_breakdown": [
@@ -6183,7 +6183,7 @@
           "win_rate": 24.3,
           "expectancy": -0.2722,
           "kelly_pct": 0,
-          "positive_edge": "False"
+          "positive_edge": false
         },
         {
           "level": "Q2_Up",
@@ -6191,7 +6191,7 @@
           "win_rate": 21.8,
           "expectancy": -0.3458,
           "kelly_pct": 0,
-          "positive_edge": "False"
+          "positive_edge": false
         },
         {
           "level": "Q3_Up",
@@ -6199,7 +6199,7 @@
           "win_rate": 21.7,
           "expectancy": -0.3475,
           "kelly_pct": 0,
-          "positive_edge": "False"
+          "positive_edge": false
         },
         {
           "level": "Q4_Up",
@@ -6207,7 +6207,7 @@
           "win_rate": 22.2,
           "expectancy": -0.3347,
           "kelly_pct": 0,
-          "positive_edge": "False"
+          "positive_edge": false
         },
         {
           "level": "Q1_Down",
@@ -6215,7 +6215,7 @@
           "win_rate": 24.9,
           "expectancy": -0.2537,
           "kelly_pct": 0,
-          "positive_edge": "False"
+          "positive_edge": false
         },
         {
           "level": "Q2_Down",
@@ -6223,7 +6223,7 @@
           "win_rate": 19.8,
           "expectancy": -0.4065,
           "kelly_pct": 0,
-          "positive_edge": "False"
+          "positive_edge": false
         },
         {
           "level": "Q3_Down",
@@ -6231,7 +6231,7 @@
           "win_rate": 18.3,
           "expectancy": -0.45,
           "kelly_pct": 0,
-          "positive_edge": "False"
+          "positive_edge": false
         },
         {
           "level": "Q4_Down",
@@ -6239,7 +6239,7 @@
           "win_rate": 13.4,
           "expectancy": -0.5968,
           "kelly_pct": 0,
-          "positive_edge": "False"
+          "positive_edge": false
         }
       ],
       "equity_curve": [
@@ -12052,7 +12052,7 @@
           "equity": 0.41
         }
       ],
-      "positive_edge": "False"
+      "positive_edge": false
     },
     {
       "name": "First Breakout Only",
@@ -12069,7 +12069,7 @@
           "win_rate": 24.3,
           "expectancy": -0.2722,
           "kelly_pct": 0,
-          "positive_edge": "False"
+          "positive_edge": false
         },
         {
           "level": "Q1_Down",
@@ -12077,7 +12077,7 @@
           "win_rate": 24.9,
           "expectancy": -0.2537,
           "kelly_pct": 0,
-          "positive_edge": "False"
+          "positive_edge": false
         }
       ],
       "equity_curve": [
@@ -14718,7 +14718,7 @@
           "equity": 270.59
         }
       ],
-      "positive_edge": "False"
+      "positive_edge": false
     },
     {
       "name": "Trend-Filtered",
@@ -14735,7 +14735,7 @@
           "win_rate": 23.5,
           "expectancy": -0.296,
           "kelly_pct": 0,
-          "positive_edge": "False"
+          "positive_edge": false
         },
         {
           "level": "Q2_Up",
@@ -14743,7 +14743,7 @@
           "win_rate": 18.8,
           "expectancy": -0.4363,
           "kelly_pct": 0,
-          "positive_edge": "False"
+          "positive_edge": false
         },
         {
           "level": "Q3_Up",
@@ -14751,7 +14751,7 @@
           "win_rate": 16.5,
           "expectancy": -0.5048,
           "kelly_pct": 0,
-          "positive_edge": "False"
+          "positive_edge": false
         },
         {
           "level": "Q4_Up",
@@ -14759,7 +14759,7 @@
           "win_rate": 18.5,
           "expectancy": -0.4464,
           "kelly_pct": 0,
-          "positive_edge": "False"
+          "positive_edge": false
         },
         {
           "level": "Q1_Down",
@@ -14767,7 +14767,7 @@
           "win_rate": 26.7,
           "expectancy": -0.1997,
           "kelly_pct": 0,
-          "positive_edge": "False"
+          "positive_edge": false
         },
         {
           "level": "Q2_Down",
@@ -14775,7 +14775,7 @@
           "win_rate": 20.5,
           "expectancy": -0.3842,
           "kelly_pct": 0,
-          "positive_edge": "False"
+          "positive_edge": false
         },
         {
           "level": "Q3_Down",
@@ -14783,7 +14783,7 @@
           "win_rate": 14.2,
           "expectancy": -0.5739,
           "kelly_pct": 0,
-          "positive_edge": "False"
+          "positive_edge": false
         },
         {
           "level": "Q4_Down",
@@ -14791,7 +14791,7 @@
           "win_rate": 11.4,
           "expectancy": -0.6582,
           "kelly_pct": 0,
-          "positive_edge": "False"
+          "positive_edge": false
         }
       ],
       "equity_curve": [
@@ -17588,7 +17588,7 @@
           "equity": 47.82
         }
       ],
-      "positive_edge": "False"
+      "positive_edge": false
     },
     {
       "name": "Q1 Only",
@@ -17605,7 +17605,7 @@
           "win_rate": 24.3,
           "expectancy": -0.2722,
           "kelly_pct": 0,
-          "positive_edge": "False"
+          "positive_edge": false
         },
         {
           "level": "Q1_Down",
@@ -17613,7 +17613,7 @@
           "win_rate": 24.9,
           "expectancy": -0.2537,
           "kelly_pct": 0,
-          "positive_edge": "False"
+          "positive_edge": false
         }
       ],
       "equity_curve": [
@@ -20254,7 +20254,7 @@
           "equity": 270.59
         }
       ],
-      "positive_edge": "False"
+      "positive_edge": false
     }
   ],
   "recent_trades": [
@@ -20854,7 +20854,7 @@
         "win_rate": 24.3,
         "expectancy": -0.2722,
         "kelly_pct": 0,
-        "positive_edge": "False"
+        "positive_edge": false
       },
       {
         "level": "Q1_Down",
@@ -20865,7 +20865,7 @@
         "win_rate": 24.9,
         "expectancy": -0.2537,
         "kelly_pct": 0,
-        "positive_edge": "False"
+        "positive_edge": false
       },
       {
         "level": "Q2_Up",
@@ -20876,7 +20876,7 @@
         "win_rate": 21.8,
         "expectancy": -0.3458,
         "kelly_pct": 0,
-        "positive_edge": "False"
+        "positive_edge": false
       },
       {
         "level": "Q2_Down",
@@ -20887,7 +20887,7 @@
         "win_rate": 19.8,
         "expectancy": -0.4065,
         "kelly_pct": 0,
-        "positive_edge": "False"
+        "positive_edge": false
       },
       {
         "level": "Q3_Up",
@@ -20898,7 +20898,7 @@
         "win_rate": 21.7,
         "expectancy": -0.3475,
         "kelly_pct": 0,
-        "positive_edge": "False"
+        "positive_edge": false
       },
       {
         "level": "Q3_Down",
@@ -20909,7 +20909,7 @@
         "win_rate": 18.3,
         "expectancy": -0.45,
         "kelly_pct": 0,
-        "positive_edge": "False"
+        "positive_edge": false
       },
       {
         "level": "Q4_Up",
@@ -20920,7 +20920,7 @@
         "win_rate": 22.2,
         "expectancy": -0.3347,
         "kelly_pct": 0,
-        "positive_edge": "False"
+        "positive_edge": false
       },
       {
         "level": "Q4_Down",
@@ -20931,7 +20931,7 @@
         "win_rate": 13.4,
         "expectancy": -0.5968,
         "kelly_pct": 0,
-        "positive_edge": "False"
+        "positive_edge": false
       }
     ],
     "best_setups": [],

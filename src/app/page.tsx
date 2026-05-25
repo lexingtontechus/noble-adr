@@ -10,14 +10,16 @@ import {
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
   ResponsiveContainer, LineChart, Line, Cell, ReferenceLine, Legend,
-  ComposedChart, Area, AreaChart
+  ComposedChart, Area, AreaChart, RadarChart, PolarGrid, PolarAngleAxis,
+  PolarRadiusAxis, Radar
 } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-// Types
+// ====== TYPES ======
+
 interface BacktestData {
   metadata: {
     symbol: string;
@@ -182,7 +184,8 @@ interface NewsData {
   timestamp: string;
 }
 
-// Color constants
+// ====== CONSTANTS ======
+
 const COLORS = {
   positive: '#22c55e',
   negative: '#ef4444',
@@ -225,14 +228,43 @@ const DARK_CHART_COLORS = {
 
 type TabId = 'overview' | 'levels' | 'variations' | 'forecast' | 'methodology';
 
-// Tab transition animation variants
+// ====== ANIMATION VARIANTS ======
+
 const tabVariants = {
   hidden: { opacity: 0, y: 12 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' as const } },
   exit: { opacity: 0, y: -8, transition: { duration: 0.15, ease: 'easeIn' as const } },
 };
 
-// Chart card wrapper with gradient top border
+// ====== CUSTOM HOOKS ======
+
+// Animated number counter using requestAnimationFrame
+function useCountUp(target: number, duration = 1500): number {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    let start: number | null = null;
+    let raf: number;
+    const step = (timestamp: number) => {
+      if (!start) start = timestamp;
+      const progress = Math.min((timestamp - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      const current = eased * target;
+      if (progress >= 1) {
+        setValue(target);
+      } else {
+        setValue(current);
+        raf = requestAnimationFrame(step);
+      }
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return value;
+}
+
+// ====== REUSABLE COMPONENTS ======
+
+// Chart card wrapper with gradient top border, glassmorphism, and hover effects
 function ChartCard({ title, subtitle, children, gradientFrom = 'cyan', gradientTo = 'purple', isDark = false }: {
   title: string;
   subtitle?: string;
@@ -251,19 +283,25 @@ function ChartCard({ title, subtitle, children, gradientFrom = 'cyan', gradientT
   };
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden" style={isDark ? { backgroundColor: '#1a1a2e', borderColor: '#2a2a3e' } : undefined}>
+    <div
+      className={`rounded-xl border overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}
+    >
       <div
         className="h-1"
         style={{
           background: `linear-gradient(to right, ${gradientMap[gradientFrom] || gradientMap.cyan}, ${gradientMap[gradientTo] || gradientMap.purple})`,
         }}
       />
-      <div className="p-5 space-y-4">
+      <div className="p-5 space-y-4 relative">
         <div>
           <h3 className="font-semibold text-sm">{title}</h3>
           {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
         </div>
         {children}
+        {/* Subtle gradient overlay at bottom */}
+        <div className="absolute bottom-0 left-0 right-0 h-4 pointer-events-none rounded-b-xl" style={{
+          background: `linear-gradient(to top, ${isDark ? 'rgba(139,92,246,0.03)' : 'rgba(139,92,246,0.02)'}, transparent)`
+        }} />
       </div>
     </div>
   );
@@ -281,6 +319,8 @@ function SectionDivider({ isDark = false }: { isDark?: boolean } = {}) {
   );
 }
 
+// ====== MAIN HOME COMPONENT ======
+
 export default function Home() {
   const [data, setData] = useState<BacktestData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -289,6 +329,12 @@ export default function Home() {
   const [news, setNews] = useState<NewsData | null>(null);
   const [isDark, setIsDark] = useState(false);
   const mainRef = useRef<HTMLDivElement>(null);
+
+  // Animated counter values for stat cards
+  const animatedTotalTrades = useCountUp(data?.overall?.total_trades ?? 0);
+  const animatedWinRate = useCountUp(data?.overall?.win_rate ?? 0);
+  const animatedExpectancy = useCountUp(data?.overall?.expectancy ? Math.abs(data.overall.expectancy) : 0);
+  const animatedKelly = useCountUp(data?.overall?.kelly_pct ? Math.abs(data.overall.kelly_pct) : 0);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -469,7 +515,7 @@ export default function Home() {
             </div>
           </div>
           <p className="text-muted-foreground text-sm">Loading backtest results...</p>
-          <style jsx>{`
+          <style>{`
             @keyframes shimmer {
               0% { background-position: -200% 0; }
               100% { background-position: 200% 0; }
@@ -508,10 +554,56 @@ export default function Home() {
     trades: m.total_trades,
   }));
 
+  // Format animated stat values
+  const expectancySign = data.overall.expectancy >= 0 ? '+' : '-';
+  const kellySign = data.overall.kelly_pct >= 0 ? '+' : '-';
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      {/* Animated Gradient Line at Top */}
+      <div
+        className="h-[3px] w-full"
+        style={{
+          background: 'linear-gradient(90deg, #06b6d4, #8b5cf6, #ec4899, #06b6d4)',
+          backgroundSize: '200% 100%',
+          animation: 'gradientLine 3s ease infinite',
+        }}
+      />
+      <style>{`
+        @keyframes gradientLine {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        /* Custom scrollbar styling */
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: hsl(var(--primary) / 0.3);
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: hsl(var(--primary) / 0.5);
+        }
+        .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: hsl(var(--primary) / 0.3) transparent;
+        }
+      `}</style>
+
+      {/* Decorative Background Orbs (hidden on mobile) */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden hidden lg:block z-0">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-cyan-500/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 -left-40 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 right-1/3 w-72 h-72 bg-pink-500/5 rounded-full blur-3xl" />
+      </div>
+
       {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -568,14 +660,14 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      <main ref={mainRef} className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <main ref={mainRef} className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6 relative z-10">
 
         {/* Hypothesis Banner */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="rounded-xl border border-border bg-card p-5 space-y-3"
+          className={`rounded-xl border p-5 space-y-3 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}
         >
           <div className="flex items-start gap-3">
             <div className="h-8 w-8 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -595,13 +687,37 @@ export default function Home() {
           </div>
         </motion.div>
 
-        {/* Key Stats Grid */}
+        {/* Key Stats Grid with Animated Counters */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { icon: <Activity className="h-4 w-4" />, label: 'Total Trades', value: data.overall.total_trades.toLocaleString(), subtext: `${data.metadata.total_trading_days} trading days`, color: 'cyan' as const },
-            { icon: <Target className="h-4 w-4" />, label: 'Win Rate', value: `${data.overall.win_rate}%`, subtext: `Breakeven: ${data.overall.breakeven_wr}%`, color: (data.overall.win_rate >= data.overall.breakeven_wr ? 'green' : 'red') as const },
-            { icon: <TrendingUp className="h-4 w-4" />, label: 'Expectancy', value: `${data.overall.expectancy > 0 ? '+' : ''}${data.overall.expectancy.toFixed(4)}`, subtext: 'quarters / trade', color: (data.overall.expectancy > 0 ? 'green' : 'red') as const },
-            { icon: <Shield className="h-4 w-4" />, label: 'Kelly %', value: `${data.overall.kelly_pct}%`, subtext: 'Position sizing', color: (data.overall.kelly_pct > 0 ? 'green' : 'red') as const },
+            {
+              icon: <Activity className="h-4 w-4" />,
+              label: 'Total Trades',
+              value: Math.round(animatedTotalTrades).toLocaleString(),
+              subtext: `${data.metadata.total_trading_days} trading days`,
+              color: 'cyan' as const,
+            },
+            {
+              icon: <Target className="h-4 w-4" />,
+              label: 'Win Rate',
+              value: `${animatedWinRate.toFixed(1)}%`,
+              subtext: `Breakeven: ${data.overall.breakeven_wr}%`,
+              color: (data.overall.win_rate >= data.overall.breakeven_wr ? 'green' : 'red') as const,
+            },
+            {
+              icon: <TrendingUp className="h-4 w-4" />,
+              label: 'Expectancy',
+              value: `${expectancySign}${animatedExpectancy.toFixed(4)}`,
+              subtext: 'quarters / trade',
+              color: (data.overall.expectancy > 0 ? 'green' : 'red') as const,
+            },
+            {
+              icon: <Shield className="h-4 w-4" />,
+              label: 'Kelly %',
+              value: `${kellySign}${animatedKelly.toFixed(1)}%`,
+              subtext: 'Position sizing',
+              color: (data.overall.kelly_pct > 0 ? 'green' : 'red') as const,
+            },
           ].map((stat, i) => (
             <motion.div
               key={stat.label}
@@ -609,33 +725,35 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: i * 0.05 }}
             >
-              <StatCard {...stat} />
+              <StatCard {...stat} isDark={isDark} />
             </motion.div>
           ))}
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex items-center gap-1 border-b border-border overflow-x-auto">
-          {[
-            { id: 'overview', label: 'Overview', icon: <BarChart3 className="h-3.5 w-3.5" /> },
-            { id: 'levels', label: 'Level Analysis', icon: <Target className="h-3.5 w-3.5" /> },
-            { id: 'variations', label: 'Strategy Variations', icon: <Zap className="h-3.5 w-3.5" /> },
-            { id: 'forecast', label: 'Weekly Forecast', icon: <Calendar className="h-3.5 w-3.5" /> },
-            { id: 'methodology', label: 'Methodology', icon: <Info className="h-3.5 w-3.5" /> },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => handleTabChange(tab.id as TabId)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === tab.id
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30'
-              }`}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
+        {/* Modern Pill-Style Tab Navigation */}
+        <div className="flex items-center justify-center">
+          <div className="inline-flex items-center gap-1 p-1 rounded-full bg-muted overflow-x-auto max-w-full">
+            {[
+              { id: 'overview', label: 'Overview', icon: <BarChart3 className="h-3.5 w-3.5" /> },
+              { id: 'levels', label: 'Level Analysis', icon: <Target className="h-3.5 w-3.5" /> },
+              { id: 'variations', label: 'Strategy Variations', icon: <Zap className="h-3.5 w-3.5" /> },
+              { id: 'forecast', label: 'Weekly Forecast', icon: <Calendar className="h-3.5 w-3.5" /> },
+              { id: 'methodology', label: 'Methodology', icon: <Info className="h-3.5 w-3.5" /> },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => handleTabChange(tab.id as TabId)}
+                className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                }`}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Tab Content with Animations */}
@@ -662,7 +780,7 @@ export default function Home() {
           )}
           {activeTab === 'variations' && (
             <motion.div key="variations" variants={tabVariants} initial="hidden" animate="visible" exit="exit">
-              <VariationsTab data={data} />
+              <VariationsTab data={data} isDark={isDark} />
             </motion.div>
           )}
           {activeTab === 'forecast' && (
@@ -672,14 +790,14 @@ export default function Home() {
           )}
           {activeTab === 'methodology' && (
             <motion.div key="methodology" variants={tabVariants} initial="hidden" animate="visible" exit="exit">
-              <MethodologyTab data={data} />
+              <MethodologyTab data={data} isDark={isDark} />
             </motion.div>
           )}
         </AnimatePresence>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border bg-card/50 mt-auto">
+      <footer className="border-t border-border bg-card/50 mt-auto relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
             <p className="text-xs text-muted-foreground">
@@ -696,14 +814,15 @@ export default function Home() {
   );
 }
 
-// ====== SUB-COMPONENTS ======
+// ====== STAT CARD ======
 
-function StatCard({ icon, label, value, subtext, color }: {
+function StatCard({ icon, label, value, subtext, color, isDark = false }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   subtext: string;
   color: 'cyan' | 'green' | 'red' | 'amber';
+  isDark?: boolean;
 }) {
   const iconColorMap = {
     cyan: 'bg-cyan-500/10 text-cyan-500',
@@ -714,7 +833,7 @@ function StatCard({ icon, label, value, subtext, color }: {
 
   return (
     <motion.div
-      className="rounded-xl border border-border bg-card p-4 space-y-2 cursor-default"
+      className={`rounded-xl border p-4 space-y-2 cursor-default ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}
       whileHover={{ scale: 1.02, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
       transition={{ duration: 0.15 }}
     >
@@ -730,12 +849,16 @@ function StatCard({ icon, label, value, subtext, color }: {
   );
 }
 
+// ====== DRAWDOWN INFO INTERFACE ======
+
 interface DrawdownInfo {
   maxDrawdownPct: number;
   maxDrawdownDuration: number;
   recoveryTime: number;
   drawdownCurve: { date: string; drawdown: number; equity: number }[];
 }
+
+// ====== OVERVIEW TAB ======
 
 function OverviewTab({ data, levelChartData, quarterChartData, monthlyChartData, equitySampled, drawdownData, adrDistributionData, currentAdr5, isDark = false }: {
   data: BacktestData;
@@ -752,6 +875,9 @@ function OverviewTab({ data, levelChartData, quarterChartData, monthlyChartData,
 
   return (
     <div className="space-y-6">
+      {/* Performance Score Card */}
+      <PerformanceScoreCard data={data} drawdownPct={drawdownData.maxDrawdownPct} isDark={isDark} />
+
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <ChartCard title="Win Rate by Level" subtitle="Breakeven threshold: 33.3% for 2:1 R:R" gradientFrom="cyan" gradientTo="purple" isDark={isDark}>
@@ -842,6 +968,9 @@ function OverviewTab({ data, levelChartData, quarterChartData, monthlyChartData,
         </ChartCard>
       </div>
 
+      {/* Day of Week Performance */}
+      <DayOfWeekChart data={data} isDark={isDark} />
+
       <SectionDivider isDark={isDark} />
 
       {/* Equity Curve */}
@@ -878,7 +1007,7 @@ function OverviewTab({ data, levelChartData, quarterChartData, monthlyChartData,
       {/* Drawdown Analysis */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <motion.div
-          className="rounded-xl border border-border bg-card p-4 space-y-2"
+          className={`rounded-xl border p-4 space-y-2 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}
           whileHover={{ scale: 1.01, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
         >
           <div className="flex items-center gap-2">
@@ -892,7 +1021,7 @@ function OverviewTab({ data, levelChartData, quarterChartData, monthlyChartData,
         </motion.div>
 
         <motion.div
-          className="rounded-xl border border-border bg-card p-4 space-y-2"
+          className={`rounded-xl border p-4 space-y-2 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}
           whileHover={{ scale: 1.01, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
         >
           <div className="flex items-center gap-2">
@@ -906,7 +1035,7 @@ function OverviewTab({ data, levelChartData, quarterChartData, monthlyChartData,
         </motion.div>
 
         <motion.div
-          className="rounded-xl border border-border bg-card p-4 space-y-2"
+          className={`rounded-xl border p-4 space-y-2 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}
           whileHover={{ scale: 1.01, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
         >
           <div className="flex items-center gap-2">
@@ -972,11 +1101,13 @@ function OverviewTab({ data, levelChartData, quarterChartData, monthlyChartData,
   );
 }
 
+// ====== LEVELS TAB ======
+
 function LevelsTab({ data, isDark = false }: { data: BacktestData; isDark?: boolean }) {
   return (
     <div className="space-y-6">
       {/* Level Breakdown Table */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className={`rounded-xl border overflow-hidden ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
         <div className="p-5 border-b border-border">
           <h3 className="font-semibold text-sm">Breakdown by ADR Quarter Level</h3>
           <p className="text-xs text-muted-foreground mt-0.5">All 8 breakout levels — probability-weighted outcomes</p>
@@ -1050,7 +1181,7 @@ function LevelsTab({ data, isDark = false }: { data: BacktestData; isDark?: bool
 
       {/* Outcome Breakdown */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <div className={`rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
           <h3 className="font-semibold text-sm">Outcome Composition by Level</h3>
           <div className="space-y-3">
             {data.level_breakdown.map(level => {
@@ -1084,7 +1215,7 @@ function LevelsTab({ data, isDark = false }: { data: BacktestData; isDark?: bool
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <div className={`rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
           <h3 className="font-semibold text-sm">Quarter Level Summary</h3>
           <p className="text-xs text-muted-foreground">Aggregated across Long + Short directions</p>
           <div className="space-y-3">
@@ -1124,12 +1255,12 @@ function LevelsTab({ data, isDark = false }: { data: BacktestData; isDark?: bool
       </div>
 
       {/* Recent Trades */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className={`rounded-xl border overflow-hidden ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
         <div className="p-5 border-b border-border">
           <h3 className="font-semibold text-sm">Recent Trade Log</h3>
           <p className="text-xs text-muted-foreground mt-0.5">Last 30 simulated trades</p>
         </div>
-        <div className="max-h-96 overflow-y-auto">
+        <div className="max-h-96 overflow-y-auto custom-scrollbar">
           <table className="w-full text-xs">
             <thead className="sticky top-0 bg-card border-b border-border">
               <tr>
@@ -1178,14 +1309,16 @@ function LevelsTab({ data, isDark = false }: { data: BacktestData; isDark?: bool
   );
 }
 
-function VariationsTab({ data }: { data: BacktestData }) {
+// ====== VARIATIONS TAB ======
+
+function VariationsTab({ data, isDark = false }: { data: BacktestData; isDark?: boolean }) {
   const variations = data.variations;
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {variations.map((v) => (
-          <div key={v.name} className="rounded-xl border border-border bg-card p-5 space-y-4">
+          <div key={v.name} className={`rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-sm">{v.name}</h3>
               <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${v.positive_edge ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
@@ -1244,6 +1377,12 @@ function VariationsTab({ data }: { data: BacktestData }) {
         ))}
       </div>
 
+      {/* R:R Optimizer Calculator */}
+      <RROptimizer isDark={isDark} />
+
+      {/* Radar Chart for Variation Comparison */}
+      <RadarComparisonChart variations={variations} isDark={isDark} />
+
       {/* Strategy Modification Recommendations */}
       <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5 space-y-3">
         <div className="flex items-center gap-2">
@@ -1280,6 +1419,8 @@ function VariationsTab({ data }: { data: BacktestData }) {
   );
 }
 
+// ====== FORECAST TAB ======
+
 function ForecastTab({ data, quote, news, isDark = false }: { data: BacktestData; quote: QuoteData | null; news: NewsData | null; isDark?: boolean }) {
   const forecast = data.forecast;
   const refOpen = forecast.reference_open;
@@ -1302,17 +1443,17 @@ function ForecastTab({ data, quote, news, isDark = false }: { data: BacktestData
 
       {/* Current Market Context */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+        <div className={`rounded-xl border p-4 space-y-2 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
           <p className="text-xs text-muted-foreground font-medium">Current ADR₅</p>
           <p className="text-2xl font-bold font-mono">{forecast.current_adr_5.toLocaleString()}</p>
           <p className="text-xs text-muted-foreground">points</p>
         </div>
-        <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+        <div className={`rounded-xl border p-4 space-y-2 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
           <p className="text-xs text-muted-foreground font-medium">Quarter Size</p>
           <p className="text-2xl font-bold font-mono">{forecast.quarter_size.toLocaleString()}</p>
           <p className="text-xs text-muted-foreground">points (ADR₅ / 4)</p>
         </div>
-        <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+        <div className={`rounded-xl border p-4 space-y-2 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
           <p className="text-xs text-muted-foreground font-medium">Reference Price</p>
           <p className="text-2xl font-bold font-mono">{forecast.reference_open.toLocaleString()}</p>
           <p className="text-xs text-muted-foreground">Last session open</p>
@@ -1321,7 +1462,7 @@ function ForecastTab({ data, quote, news, isDark = false }: { data: BacktestData
 
       {/* Live Price Context */}
       {quote && (
-        <div className="rounded-xl border border-border bg-card p-4">
+        <div className={`rounded-xl border p-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
           <div className="flex items-center gap-3">
             <div className={`h-2 w-2 rounded-full ${quote.change >= 0 ? 'bg-green-500' : 'bg-red-500'}`} />
             <div className="flex-1">
@@ -1337,7 +1478,7 @@ function ForecastTab({ data, quote, news, isDark = false }: { data: BacktestData
       )}
 
       {/* Forecast Levels - Visual Map */}
-      <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+      <div className={`rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
         <h3 className="font-semibold text-sm">Upcoming Week — ADR Quarter Levels</h3>
         <p className="text-xs text-muted-foreground">Price levels derived from 5-day ADR centered on last session open</p>
         <div className="relative py-8">
@@ -1398,7 +1539,7 @@ function ForecastTab({ data, quote, news, isDark = false }: { data: BacktestData
       </div>
 
       {/* Forecast Details Table */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className={`rounded-xl border overflow-hidden ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
         <div className="p-5 border-b border-border">
           <h3 className="font-semibold text-sm">Forecast Level Details</h3>
         </div>
@@ -1454,7 +1595,7 @@ function ForecastTab({ data, quote, news, isDark = false }: { data: BacktestData
       </div>
 
       {/* Recommendation */}
-      <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+      <div className={`rounded-xl border p-5 space-y-3 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
         <div className="flex items-center gap-2">
           <Info className="h-4 w-4 text-cyan-500" />
           <h3 className="font-semibold text-sm">Weekly Forecast & Recommendation</h3>
@@ -1465,14 +1606,13 @@ function ForecastTab({ data, quote, news, isDark = false }: { data: BacktestData
       </div>
 
       {/* Trade Simulator */}
-      <TradeSimulator data={data} />
+      <TradeSimulator data={data} isDark={isDark} />
     </div>
   );
 }
 
-// ====== METHODOLOGY TAB ======
-
 // ====== CONFLUENCE HEAT MAP ======
+
 function ConfluenceHeatMap({ data, isDark = false }: { data: BacktestData; isDark?: boolean }) {
   const levels = data.level_breakdown;
 
@@ -1505,7 +1645,7 @@ function ConfluenceHeatMap({ data, isDark = false }: { data: BacktestData; isDar
   };
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+    <div className={`rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
       <div className="flex items-center gap-2">
         <BarChart3 className="h-4 w-4 text-cyan-500" />
         <div>
@@ -1546,6 +1686,7 @@ function ConfluenceHeatMap({ data, isDark = false }: { data: BacktestData; isDar
 }
 
 // ====== MARKET NEWS ======
+
 function MarketNews({ news }: { news: NewsData | null }) {
   if (!news) return null;
 
@@ -1576,7 +1717,7 @@ function MarketNews({ news }: { news: NewsData | null }) {
           <span className="text-muted-foreground font-medium">{news.source === 'live' ? 'Live' : 'Cached'}</span>
         </div>
       </div>
-      <div className="max-h-64 overflow-y-auto space-y-2 pr-1" style={{ scrollbarWidth: 'thin' }}>
+      <div className="max-h-64 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
         {news.items.map((item, i) => (
           <div
             key={i}
@@ -1597,7 +1738,8 @@ function MarketNews({ news }: { news: NewsData | null }) {
 }
 
 // ====== TRADE SIMULATOR ======
-function TradeSimulator({ data }: { data: BacktestData }) {
+
+function TradeSimulator({ data, isDark = false }: { data: BacktestData; isDark?: boolean }) {
   const [accountSize, setAccountSize] = useState(10000);
   const [riskPct, setRiskPct] = useState(2);
   const [selectedLevel, setSelectedLevel] = useState(data.forecast.forecast_details[0]?.level || 'Q1_Up');
@@ -1612,10 +1754,9 @@ function TradeSimulator({ data }: { data: BacktestData }) {
 
   const quarterSize = data.forecast.quarter_size;
   const riskAmount = accountSize * (riskPct / 100);
-  // For US30, each point = $1 per contract (micro) or $5 (standard). We use micro.
-  const slDistance = quarterSize; // 1 quarter stop
+  const slDistance = quarterSize;
   const contracts = slDistance > 0 ? Math.floor(riskAmount / slDistance) : 0;
-  const rewardAmount = contracts * quarterSize * 2; // 2:1 R:R
+  const rewardAmount = contracts * quarterSize * 2;
   const expectedValue = (winRate / 100) * rewardAmount - (1 - winRate / 100) * riskAmount;
   const recommendedKelly = Math.max(0, kellyPct);
 
@@ -1626,7 +1767,7 @@ function TradeSimulator({ data }: { data: BacktestData }) {
   const levelOptions = data.forecast.forecast_details.map(fd => fd.level);
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5 space-y-5">
+    <div className={`rounded-xl border p-5 space-y-5 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
       <div className="flex items-center gap-2">
         <Calculator className="h-4 w-4 text-purple-500" />
         <div>
@@ -1747,14 +1888,14 @@ function TradeSimulator({ data }: { data: BacktestData }) {
 
 // ====== METHODOLOGY TAB ======
 
-function MethodologyTab({ data }: { data: BacktestData }) {
+function MethodologyTab({ data, isDark = false }: { data: BacktestData; isDark?: boolean }) {
   const refOpen = data.forecast.reference_open;
   const quarterSize = data.forecast.quarter_size;
 
   return (
     <div className="space-y-6">
       {/* Strategy Overview */}
-      <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+      <div className={`rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
         <div className="flex items-center gap-2">
           <BookOpen className="h-4 w-4 text-cyan-500" />
           <h3 className="font-semibold text-sm">Strategy Overview</h3>
@@ -1764,10 +1905,10 @@ function MethodologyTab({ data }: { data: BacktestData }) {
         </p>
       </div>
 
-      <SectionDivider />
+      <SectionDivider isDark={isDark} />
 
       {/* Step 1: ADR Calculation */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className={`rounded-xl border overflow-hidden ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
         <div className="h-1" style={{ background: 'linear-gradient(to right, #06b6d4, #8b5cf6)' }} />
         <div className="p-5 space-y-4">
           <div className="flex items-center gap-3">
@@ -1797,7 +1938,7 @@ function MethodologyTab({ data }: { data: BacktestData }) {
       </div>
 
       {/* Step 2: Quarter Level Derivation */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className={`rounded-xl border overflow-hidden ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
         <div className="h-1" style={{ background: 'linear-gradient(to right, #8b5cf6, #f97316)' }} />
         <div className="p-5 space-y-4">
           <div className="flex items-center gap-3">
@@ -1865,7 +2006,7 @@ function MethodologyTab({ data }: { data: BacktestData }) {
       </div>
 
       {/* Step 3: Trade Entry/Exit Rules */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className={`rounded-xl border overflow-hidden ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
         <div className="h-1" style={{ background: 'linear-gradient(to right, #f97316, #22c55e)' }} />
         <div className="p-5 space-y-4">
           <div className="flex items-center gap-3">
@@ -1930,7 +2071,7 @@ function MethodologyTab({ data }: { data: BacktestData }) {
       </div>
 
       {/* Step 4: Risk Management */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className={`rounded-xl border overflow-hidden ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
         <div className="h-1" style={{ background: 'linear-gradient(to right, #22c55e, #f59e0b)' }} />
         <div className="p-5 space-y-4">
           <div className="flex items-center gap-3">
@@ -1984,7 +2125,7 @@ function MethodologyTab({ data }: { data: BacktestData }) {
       </div>
 
       {/* Step 5: Backtest Methodology */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className={`rounded-xl border overflow-hidden ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
         <div className="h-1" style={{ background: 'linear-gradient(to right, #f59e0b, #ef4444)' }} />
         <div className="p-5 space-y-4">
           <div className="flex items-center gap-3">
@@ -2031,6 +2172,412 @@ function MethodologyTab({ data }: { data: BacktestData }) {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ====== DAY OF WEEK PERFORMANCE CHART (NEW) ======
+
+function DayOfWeekChart({ data, isDark = false }: { data: BacktestData; isDark?: boolean }) {
+  const cc = isDark ? DARK_CHART_COLORS : LIGHT_CHART_COLORS;
+
+  const dayOfWeekData = useMemo(() => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayStats: Record<string, { wins: number; total: number }> = {
+      Mon: { wins: 0, total: 0 },
+      Tue: { wins: 0, total: 0 },
+      Wed: { wins: 0, total: 0 },
+      Thu: { wins: 0, total: 0 },
+      Fri: { wins: 0, total: 0 },
+    };
+
+    data.recent_trades.forEach(trade => {
+      try {
+        const date = new Date(trade.date + 'T00:00:00');
+        const dayName = days[date.getDay()];
+        if (dayStats[dayName]) {
+          dayStats[dayName].total++;
+          if (trade.outcome === 'win') dayStats[dayName].wins++;
+        }
+      } catch {
+        // skip invalid dates
+      }
+    });
+
+    return Object.entries(dayStats).map(([day, stats]) => ({
+      day,
+      winRate: stats.total > 0 ? Math.round((stats.wins / stats.total) * 1000) / 10 : 0,
+      trades: stats.total,
+      wins: stats.wins,
+    }));
+  }, [data]);
+
+  return (
+    <ChartCard title="Win Rate by Day of Week" subtitle="Performance breakdown across trading days" gradientFrom="cyan" gradientTo="green" isDark={isDark}>
+      <div className="h-56">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={dayOfWeekData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={cc.grid} />
+            <XAxis dataKey="day" tick={{ fontSize: 11 }} stroke={cc.text} />
+            <YAxis tick={{ fontSize: 10 }} stroke={cc.text} domain={[0, 50]} />
+            <RechartsTooltip
+              contentStyle={{ background: cc.tooltipBg, border: `1px solid ${cc.tooltipBorder}`, borderRadius: '8px', fontSize: '12px', color: isDark ? '#e0e0e0' : undefined }}
+              formatter={(value: number, name: string) => {
+                if (name === 'winRate') return [`${value}%`, 'Win Rate'];
+                return [value, name];
+              }}
+              labelFormatter={(label: string) => {
+                const item = dayOfWeekData.find(d => d.day === label);
+                return item ? `${label} (${item.trades} trades)` : label;
+              }}
+            />
+            <ReferenceLine y={33.3} stroke="#ef4444" strokeDasharray="5 5" label={{ value: 'Breakeven 33.3%', position: 'right', fontSize: 10, fill: '#ef4444' }} />
+            <Bar dataKey="winRate" radius={[4, 4, 0, 0]}>
+              {dayOfWeekData.map((entry, index) => (
+                <Cell key={index} fill={entry.winRate >= 33.3 ? '#22c55e' : '#ef4444'} fillOpacity={0.8} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="flex items-center gap-4 text-[10px] text-muted-foreground mt-2">
+        {dayOfWeekData.map(d => (
+          <span key={d.day} className="flex items-center gap-1">
+            <span className={`h-1.5 w-1.5 rounded-full ${d.winRate >= 33.3 ? 'bg-green-500' : 'bg-red-500'}`} />
+            {d.day}: {d.winRate}% ({d.trades})
+          </span>
+        ))}
+      </div>
+    </ChartCard>
+  );
+}
+
+// ====== R:R OPTIMIZER CALCULATOR (NEW) ======
+
+function RROptimizer({ isDark = false }: { isDark?: boolean }) {
+  const currentWR = 22.1;
+  const [rrRatio, setRrRatio] = useState(2.0);
+  const breakevenWR = Math.round((1 / (1 + rrRatio)) * 1000) / 10;
+  const gap = Math.round((currentWR - breakevenWR) * 10) / 10;
+  const minRRNeeded = Math.round((1 / (currentWR / 100) - 1) * 100) / 100;
+
+  return (
+    <div className={`rounded-xl border p-5 space-y-5 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+      <div className="flex items-center gap-2">
+        <Calculator className="h-4 w-4 text-amber-500" />
+        <div>
+          <h3 className="font-semibold text-sm">R:R Ratio Optimizer</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Find the minimum R:R ratio needed for profitability</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {/* Slider & Controls */}
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-muted-foreground">
+              Risk:Reward Ratio: {rrRatio.toFixed(2)}:1
+            </label>
+            <Slider
+              value={[rrRatio]}
+              onValueChange={(v) => setRrRatio(v[0])}
+              min={0.5}
+              max={4}
+              step={0.25}
+            />
+            <div className="flex justify-between text-[10px] text-muted-foreground">
+              <span>0.5:1</span>
+              <span>4:1</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-lg border border-border p-3 space-y-1">
+              <p className="text-xs text-muted-foreground">Breakeven WR</p>
+              <p className={`text-lg font-bold font-mono ${breakevenWR <= currentWR ? 'text-green-500' : 'text-red-500'}`}>
+                {breakevenWR}%
+              </p>
+            </div>
+            <div className="rounded-lg border border-border p-3 space-y-1">
+              <p className="text-xs text-muted-foreground">Gap to Current WR</p>
+              <p className={`text-lg font-bold font-mono ${gap >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                {gap >= 0 ? '+' : ''}{gap}%
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 space-y-1">
+            <p className="text-xs font-medium text-amber-500">Minimum R:R Needed</p>
+            <p className="text-lg font-bold font-mono">{minRRNeeded}:1</p>
+            <p className="text-[10px] text-muted-foreground">
+              With {currentWR}% WR, you need at least {minRRNeeded}:1 R:R to break even
+            </p>
+          </div>
+        </div>
+
+        {/* Visual Gauge */}
+        <div className="space-y-3">
+          <p className="text-xs font-medium text-muted-foreground">Current WR vs Breakeven WR</p>
+          <div className="space-y-2">
+            <div className="relative h-5 rounded-full bg-muted overflow-hidden">
+              <div
+                className="absolute inset-y-0 left-0 rounded-full transition-all duration-300"
+                style={{
+                  width: `${Math.min(100, (currentWR / 60) * 100)}%`,
+                  backgroundColor: currentWR >= breakevenWR ? '#22c55e' : '#ef4444',
+                  opacity: 0.6,
+                }}
+              />
+              <div
+                className="absolute inset-y-0 w-0.5 transition-all duration-300"
+                style={{
+                  left: `${Math.min(100, (breakevenWR / 60) * 100)}%`,
+                  backgroundColor: '#f59e0b',
+                }}
+              />
+              <span
+                className="absolute text-[10px] font-bold z-10"
+                style={{
+                  left: `${Math.min((currentWR / 60) * 100, 85)}%`,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: currentWR >= breakevenWR ? '#22c55e' : '#ef4444',
+                }}
+              >
+                {currentWR}%
+              </span>
+            </div>
+            <div className="flex justify-between text-[10px] text-muted-foreground">
+              <span>0%</span>
+              <span className="text-amber-500 font-medium">Breakeven: {breakevenWR}%</span>
+              <span>60%</span>
+            </div>
+          </div>
+
+          <div className="space-y-2 mt-4">
+            <p className="text-xs font-medium text-muted-foreground">R:R Impact Analysis</p>
+            {[0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4].map(rr => {
+              const beWR = Math.round((1 / (1 + rr)) * 1000) / 10;
+              const isCurrentRR = Math.abs(rr - rrRatio) < 0.01;
+              const isProfitable = currentWR >= beWR;
+              return (
+                <div key={rr} className={`flex items-center gap-2 text-xs py-1 px-2 rounded ${isCurrentRR ? 'bg-muted/50 border border-border' : ''}`}>
+                  <span className={`w-12 font-mono ${isCurrentRR ? 'font-bold' : ''}`}>{rr}:1</span>
+                  <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${Math.min(100, (beWR / 60) * 100)}%`,
+                        backgroundColor: isProfitable ? '#22c55e' : '#ef4444',
+                        opacity: 0.6,
+                      }}
+                    />
+                  </div>
+                  <span className={`w-14 text-right font-mono ${isProfitable ? 'text-green-500' : 'text-red-500'}`}>
+                    BE: {beWR}%
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div className={`rounded-lg p-3 text-sm ${gap >= 0 ? 'bg-green-500/5 border border-green-500/20' : 'bg-red-500/5 border border-red-500/20'}`}>
+        <p className={gap >= 0 ? 'text-green-500' : 'text-red-500'} style={{ fontWeight: 500 }}>
+          {gap >= 0
+            ? `With ${currentWR}% WR and ${rrRatio}:1 R:R, the strategy is above breakeven by ${gap}%. This combination may be viable.`
+            : `With ${currentWR}% WR and ${rrRatio}:1 R:R, you are ${Math.abs(gap)}% below breakeven. You need at least ${minRRNeeded}:1 R:R to break even.`
+          }
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ====== RADAR COMPARISON CHART (NEW) ======
+
+function RadarComparisonChart({ variations, isDark = false }: { variations: VariationResult[]; isDark?: boolean }) {
+  const cc = isDark ? DARK_CHART_COLORS : LIGHT_CHART_COLORS;
+
+  const radarData = useMemo(() => {
+    if (variations.length === 0) return [];
+
+    // Find min/max for normalization
+    const allWR = variations.map(v => v.win_rate);
+    const allExp = variations.map(v => v.expectancy);
+    const allKelly = variations.map(v => v.kelly_pct);
+    const allReturn = variations.map(v => v.total_return_pct);
+    const allTrades = variations.map(v => v.total_trades);
+
+    const normalize = (val: number, min: number, max: number) => {
+      if (max === min) return 50;
+      return Math.round(((val - min) / (max - min)) * 100);
+    };
+
+    const dimensions = ['Win Rate', 'Expectancy', 'Kelly %', 'Return %', 'Sample Size'];
+    return dimensions.map(dim => {
+      const entry: Record<string, string | number> = { dimension: dim };
+      variations.forEach(v => {
+        let raw = 0;
+        let min = 0;
+        let max = 0;
+        switch (dim) {
+          case 'Win Rate': raw = v.win_rate; min = Math.min(...allWR); max = Math.max(...allWR); break;
+          case 'Expectancy': raw = v.expectancy; min = Math.min(...allExp); max = Math.max(...allExp); break;
+          case 'Kelly %': raw = v.kelly_pct; min = Math.min(...allKelly); max = Math.max(...allKelly); break;
+          case 'Return %': raw = v.total_return_pct; min = Math.min(...allReturn); max = Math.max(...allReturn); break;
+          case 'Sample Size': raw = v.total_trades; min = Math.min(...allTrades); max = Math.max(...allTrades); break;
+        }
+        entry[v.name] = normalize(raw, min, max);
+      });
+      return entry;
+    });
+  }, [variations]);
+
+  const variationColors = ['#06b6d4', '#f97316', '#8b5cf6', '#ec4899'];
+
+  if (radarData.length === 0) return null;
+
+  return (
+    <ChartCard title="Strategy Variation Comparison" subtitle="Normalized comparison across key metrics (0-100 scale)" gradientFrom="purple" gradientTo="pink" isDark={isDark}>
+      <div className="h-80">
+        <ResponsiveContainer width="100%" height="100%">
+          <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="70%">
+            <PolarGrid stroke={cc.grid} />
+            <PolarAngleAxis dataKey="dimension" tick={{ fontSize: 11, fill: cc.text }} />
+            <PolarRadiusAxis tick={{ fontSize: 9, fill: cc.text }} domain={[0, 100]} />
+            {variations.map((v, i) => (
+              <Radar
+                key={v.name}
+                name={v.name}
+                dataKey={v.name}
+                stroke={variationColors[i % variationColors.length]}
+                fill={variationColors[i % variationColors.length]}
+                fillOpacity={0.1}
+                strokeWidth={2}
+              />
+            ))}
+            <Legend wrapperStyle={{ fontSize: '11px' }} />
+            <RechartsTooltip
+              contentStyle={{ background: cc.tooltipBg, border: `1px solid ${cc.tooltipBorder}`, borderRadius: '8px', fontSize: '12px', color: isDark ? '#e0e0e0' : undefined }}
+            />
+          </RadarChart>
+        </ResponsiveContainer>
+      </div>
+    </ChartCard>
+  );
+}
+
+// ====== PERFORMANCE SCORE CARD (NEW) ======
+
+function PerformanceScoreCard({ data, drawdownPct, isDark = false }: {
+  data: BacktestData;
+  drawdownPct: number;
+  isDark?: boolean;
+}) {
+  const wr = data.overall.win_rate;
+  const exp = data.overall.expectancy;
+  const kelly = data.overall.kelly_pct;
+
+  // Calculate weighted score (0-100)
+  // Win Rate component: 0-30 points (40% WR = max)
+  const wrScore = Math.min(30, (wr / 40) * 30);
+  // Expectancy component: 0-30 points
+  const expScore = Math.max(0, Math.min(30, 15 + exp * 130));
+  // Kelly component: 0-20 points
+  const kellyScore = Math.max(0, Math.min(20, 10 + kelly * 0.9));
+  // Drawdown component: 0-20 points (lower drawdown = higher score)
+  const ddScore = Math.max(0, Math.min(20, 20 - drawdownPct * 0.5));
+
+  const score = Math.round(Math.min(100, Math.max(0, wrScore + expScore + kellyScore + ddScore)));
+  const scoreColor = score >= 60 ? '#22c55e' : score >= 30 ? '#f59e0b' : '#ef4444';
+  const scoreLabel = score >= 60 ? 'Strong' : score >= 30 ? 'Moderate' : 'Weak';
+
+  const radius = 52;
+  const circumference = 2 * Math.PI * radius;
+
+  return (
+    <div className="flex flex-col md:flex-row gap-4 items-center md:items-start">
+      {/* Circular Score Indicator */}
+      <div className={`rounded-xl border p-6 flex flex-col items-center ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+        <h3 className="font-semibold text-sm mb-4">Strategy Score</h3>
+        <div className="relative w-36 h-36">
+          <svg viewBox="0 0 120 120" className="w-full h-full">
+            {/* Background ring */}
+            <circle
+              cx="60" cy="60" r={radius}
+              fill="none"
+              stroke={isDark ? '#333' : '#e5e7eb'}
+              strokeWidth="8"
+            />
+            {/* Animated progress ring */}
+            <motion.circle
+              cx="60" cy="60" r={radius}
+              fill="none"
+              stroke={scoreColor}
+              strokeWidth="8"
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              initial={{ strokeDashoffset: circumference }}
+              animate={{ strokeDashoffset: circumference * (1 - score / 100) }}
+              transition={{ duration: 1.5, ease: 'easeOut' }}
+              transform="rotate(-90 60 60)"
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <motion.span
+              className="text-3xl font-bold"
+              style={{ color: scoreColor }}
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.8, duration: 0.3 }}
+            >
+              {score}
+            </motion.span>
+            <span className="text-xs text-muted-foreground">{scoreLabel}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Score Breakdown */}
+      <div className={`flex-1 rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+        <h3 className="font-semibold text-sm">Score Breakdown</h3>
+        <div className="space-y-3">
+          {[
+            { label: 'Win Rate', weight: '30%', value: wrScore, max: 30, raw: `${wr}%`, color: wr >= 33.3 ? '#22c55e' : '#ef4444' },
+            { label: 'Expectancy', weight: '30%', value: expScore, max: 30, raw: exp >= 0 ? `+${exp.toFixed(4)}` : exp.toFixed(4), color: exp >= 0 ? '#22c55e' : '#ef4444' },
+            { label: 'Kelly %', weight: '20%', value: kellyScore, max: 20, raw: `${kelly}%`, color: kelly >= 0 ? '#22c55e' : '#ef4444' },
+            { label: 'Max Drawdown', weight: '20%', value: ddScore, max: 20, raw: `${drawdownPct.toFixed(1)}%`, color: '#ef4444' },
+          ].map(item => (
+            <div key={item.label} className="space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{item.label}</span>
+                  <span className="text-muted-foreground">({item.weight})</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span style={{ color: item.color }} className="font-mono">{item.raw}</span>
+                  <span className="text-muted-foreground">→ {Math.round(item.value)}/{item.max}</span>
+                </div>
+              </div>
+              <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                <motion.div
+                  className="h-full rounded-full"
+                  style={{ backgroundColor: item.color, opacity: 0.7 }}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(item.value / item.max) * 100}%` }}
+                  transition={{ duration: 1, delay: 0.3, ease: 'easeOut' }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="pt-2 border-t border-border flex items-center justify-between text-xs">
+          <span className="font-medium">Total Score</span>
+          <span className="font-bold" style={{ color: scoreColor }}>{score}/100</span>
         </div>
       </div>
     </div>
