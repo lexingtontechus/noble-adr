@@ -93,7 +93,7 @@ function TradeSimulator({ data, isDark = false }: { data: BacktestData; isDark?:
   const levelOptions = data.forecast.forecast_details.map(fd => fd.level);
 
   return (
-    <div className={`rounded-xl border p-5 space-y-5 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+    <div className={`rounded-xl border p-5 space-y-5 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
       <div className="flex items-center gap-2">
         <Calculator className="h-4 w-4 text-purple-500" />
         <div>
@@ -244,17 +244,17 @@ export function ForecastTab({ data, quote, news, isDark = false }: { data: Backt
 
       {/* Current Market Context */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className={`rounded-xl border p-4 space-y-2 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+        <div className={`rounded-xl border p-4 space-y-2 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
           <p className="text-xs text-muted-foreground font-medium">Current ADR₅</p>
           <p className="text-2xl font-bold font-mono">{forecast.current_adr_5.toLocaleString()}</p>
           <p className="text-xs text-muted-foreground">points</p>
         </div>
-        <div className={`rounded-xl border p-4 space-y-2 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+        <div className={`rounded-xl border p-4 space-y-2 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
           <p className="text-xs text-muted-foreground font-medium">Quarter Size</p>
           <p className="text-2xl font-bold font-mono">{forecast.quarter_size.toLocaleString()}</p>
           <p className="text-xs text-muted-foreground">points (ADR₅ / 4)</p>
         </div>
-        <div className={`rounded-xl border p-4 space-y-2 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+        <div className={`rounded-xl border p-4 space-y-2 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
           <p className="text-xs text-muted-foreground font-medium">Reference Price</p>
           <p className="text-2xl font-bold font-mono">{forecast.reference_open.toLocaleString()}</p>
           <p className="text-xs text-muted-foreground">Last session open</p>
@@ -263,7 +263,7 @@ export function ForecastTab({ data, quote, news, isDark = false }: { data: Backt
 
       {/* Live Price Context */}
       {quote && (
-        <div className={`rounded-xl border p-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+        <div className={`rounded-xl border p-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
           <div className="flex items-center gap-3">
             <div className={`h-2 w-2 rounded-full ${quote.change >= 0 ? 'bg-green-500' : 'bg-red-500'}`} />
             <div className="flex-1">
@@ -279,7 +279,7 @@ export function ForecastTab({ data, quote, news, isDark = false }: { data: Backt
       )}
 
       {/* Forecast Levels - Visual Map */}
-      <div className={`rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+      <div className={`rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
         <h3 className="font-semibold text-sm">Upcoming Week — ADR Quarter Levels</h3>
         <p className="text-xs text-muted-foreground">Price levels derived from 5-day ADR centered on last session open</p>
         <div className="relative py-8">
@@ -378,7 +378,7 @@ export function ForecastTab({ data, quote, news, isDark = false }: { data: Backt
       </div>
 
       {/* Forecast Details Table */}
-      <div className={`rounded-xl border overflow-hidden ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+      <div className={`rounded-xl border overflow-hidden ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
         <div className="p-5 border-b border-border">
           <h3 className="font-semibold text-sm">Forecast Level Details</h3>
         </div>
@@ -434,7 +434,7 @@ export function ForecastTab({ data, quote, news, isDark = false }: { data: Backt
       </div>
 
       {/* Recommendation */}
-      <div className={`rounded-xl border p-5 space-y-3 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+      <div className={`rounded-xl border p-5 space-y-3 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
         <div className="flex items-center gap-2">
           <Info className="h-4 w-4 text-cyan-500" />
           <h3 className="font-semibold text-sm">Weekly Forecast & Recommendation</h3>

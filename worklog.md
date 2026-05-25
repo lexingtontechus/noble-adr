@@ -963,3 +963,166 @@ Stage Summary:
 4. Implement server-side backtest computation (parameter changes from UI)
 5. Add automated alerts when volatility regime changes
 6. Add intraday data integration for accurate path resolution
+
+---
+Task ID: 3+4
+Agent: full-stack-developer
+Task: Styling improvements and new feature additions (Round 6)
+
+Work Log:
+- Read worklog.md for all prior project progress (Tasks 10-4)
+- Read all existing component files to understand current code structure
+- Implemented 6 styling improvements:
+  A. Animated Breadcrumb Navigation: Added below header showing "Dashboard > [Active Tab Name]" with animated ChevronRight separator and framer-motion transitions. Uses text-muted-foreground for "Dashboard" and text-foreground for the active tab name. Tab labels map for display names.
+  B. Glassmorphism Card Enhancements: Added `glassmorphism-card` CSS class with `box-shadow: inset 0 1px 0 rgba(255,255,255,0.05)` in dark mode. Applied to all card elements across chart-card.tsx, stat-card.tsx, levels-tab.tsx, variations-tab.tsx, overview-tab.tsx, forecast-tab.tsx, methodology-tab.tsx, monte-carlo.tsx, advanced-tab.tsx, advanced-analytics.tsx, risk-metrics.tsx. Also added inline style `style={isDark ? { boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)' } : undefined}` on ChartCard inner content div.
+  C. SVG-based Skeleton Loading States: Replaced simple shimmer bars with detailed SVG skeletons. Bar chart skeleton: axes, 8 animated bar placeholders with staggered opacity animation, dashed reference line. Line chart skeleton: quadratic curve path with animated stroke-dasharray/dashoffset, filled area below.
+  D. Card Click Ripple Effect: Added CSS ripple animation (`.ripple-container .ripple` with `@keyframes rippleAnimation`). Implemented handleClick on both ChartCard and StatCard that creates a span element at click position, animates it with scale(4) + opacity 0 over 0.6s, then removes it.
+  E. Responsive Font Scaling: Added `.responsive-stat-value` CSS class with `font-size: clamp(1.25rem, 3vw, 1.75rem)`. Applied to StatCard value text (replacing hardcoded `text-2xl`).
+  F. Tab Content Fade Gradient: Added a 60px gradient div at the bottom of the main content area using `linear-gradient(to top, hsl(var(--background)), transparent)` to indicate more content below.
+- Implemented 4 new features:
+  A. Keyboard Navigation: Added useEffect with keydown listener. Shortcuts: 1-6 for tab switching, E for Export (copy summary), D for dark mode toggle, ? for help overlay. Ignores shortcuts when typing in input/textarea/select fields. Added `showKeyboardHints` state and AnimatePresence overlay with kbd elements showing shortcuts.
+  B. Data Refresh Indicator: Added `lastUpdated` Date state, updated in fetchData/fetchQuote callbacks. Shows "Updated HH:MM" timestamp next to price quote with small RefreshCw button that spins when `isRefreshing` is true. Manual refresh triggers fetchQuote + fetchNews simultaneously.
+  C. Strategy Comparison Table (Variations Tab): New `StrategyComparisonTable` component with Trophy icon. Columns: Name, Win Rate, Expectancy, Kelly %, Total Trades, Final Equity. Best value in each column highlighted in green with ★ indicator. Computed from variations array using Math.max per metric.
+  D. Trade Distribution Donut Chart (Level Analysis Tab): New `TradeDistributionDonut` component with PieChartIcon. Uses Recharts PieChart with innerRadius=55, outerRadius=80 (donut style). Aggregates ambiguous/pure loss/EOD close counts across all levels. Shows donut chart on left, progress bars with percentages on right. Color-coded: amber (ambiguous), red (pure loss), gray (EOD close).
+- Fixed critical bug: handleCopySummary was defined after the keyboard navigation useEffect that referenced it, causing ReferenceError. Moved handleCopySummary definition before the useEffect.
+- Added new icon imports: ChevronRight, RefreshCw, Keyboard (page.tsx), Trophy (variations-tab.tsx), PieChartIcon (levels-tab.tsx)
+- Added Recharts imports: PieChart, Pie, Cell, Legend (levels-tab.tsx), motion (variations-tab.tsx)
+- All lint checks pass with zero errors
+- Dev server compiles and serves correctly (200 status on all pages and API routes)
+- All 6 tabs preserved and working
+
+Stage Summary:
+- All 6 styling improvements implemented: breadcrumb navigation, glassmorphism inner glow, SVG skeleton loading, card click ripple, responsive font scaling, tab content fade gradient
+- All 4 new features implemented: keyboard navigation with ? overlay, data refresh indicator with spinning button, strategy comparison table with green highlights, trade distribution donut chart
+- Fixed critical ReferenceError bug with handleCopySummary ordering
+- Lint passes with zero errors, dev server stable, all APIs returning 200
+
+---
+Task ID: 25
+Agent: Main (QA + Bug Fix + Styling + Feature Development Round 8)
+Task: QA testing, critical mobile bug fixes, styling improvements, new features
+
+Work Log:
+- Reviewed worklog.md for all prior project progress (Tasks 10-24, Round 7)
+- Performed comprehensive QA testing via agent-browser across all 6 tabs
+- Identified 4 bugs:
+  1. CRITICAL: Header overflows on mobile (~480px content in ~375px viewport)
+  2. CRITICAL: Tab navigation broken on mobile (horizontal scroll container intercepts pointer events)
+  3. MEDIUM: Ordinal suffix bug ("93th" instead of "93rd" in Volatility Regime)
+  4. MEDIUM: No visual scroll indicator on tab bar for mobile
+- Fixed Bug 1 (Header overflow):
+  - Added `flex-wrap justify-end` to header right container
+  - Hidden session timer on mobile (`hidden md:flex`)
+  - Hidden "2:1 R:R" badge on mobile (`hidden sm:inline`)
+  - Hidden Export button text on mobile (icon-only mode)
+  - Reduced gaps (`gap-1.5 sm:gap-2`) and padding (`px-2 sm:px-2.5`)
+- Fixed Bug 2 (Tab navigation broken on mobile):
+  - Added `scrollbar-none` class and `WebkitOverflowScrolling: 'touch'` for smooth scrolling
+  - Added `touch-manipulation` CSS class for proper touch event handling
+  - Added `active:bg-muted/70` for touch feedback
+  - Shortened tab labels on mobile ("Level Analysis" → "Levels", "Strategy Variations" → "Variations", etc.)
+  - Added icon-only mode on smallest screens with `hidden xs:inline sm:inline`
+- Fixed Bug 3 (Ordinal suffix):
+  - Replaced hardcoded "th" suffix with proper ordinal logic in overview-tab.tsx
+  - Handles 1st, 2nd, 3rd, 11th-13th exceptions correctly
+- Implemented 6 styling improvements:
+  A. Animated Breadcrumb Navigation: "Dashboard > [Active Tab]" with animated ChevronRight and color transitions
+  B. Glassmorphism Card Enhancements: Added `glassmorphism-card` CSS class with inner glow `box-shadow: inset 0 1px 0 rgba(255,255,255,0.05)` in dark mode
+  C. SVG-based Skeleton Loading States: Replaced simple shimmer bars with detailed SVG skeletons showing chart-type outlines
+  D. Card Click Ripple Effect: CSS ripple animation on ChartCard/StatCard clicks with cyan circle expanding and fading
+  E. Responsive Font Scaling: `.responsive-stat-value` class with `clamp(1.25rem, 3vw, 1.75rem)` on stat values
+  F. Tab Content Fade Gradient: 60px gradient at bottom of main content indicating more content below
+- Implemented 4 new features:
+  A. Keyboard Navigation: 1-6 for tabs, E for Export, D for dark mode, ? for help overlay, Esc to close
+  B. Data Refresh Indicator: "Updated HH:MM" timestamp + RefreshCw button that spins when refreshing
+  C. Strategy Comparison Table: Side-by-side comparison of 4 variations with green-highlighted best values
+  D. Trade Distribution Donut Chart: Recharts PieChart donut showing outcome distribution across all levels
+- Fixed runtime error: handleCopySummary referenced before initialization in keyboard useEffect
+- All lint checks pass with zero errors
+- Dev server stable, all 3 API routes returning 200
+- Total codebase: 5426 lines across 15 files (page.tsx + 14 component files)
+
+Stage Summary:
+- Fixed 4 bugs including 2 critical mobile issues
+- Added 6 styling improvements: breadcrumb, glassmorphism cards, SVG skeletons, ripple effect, responsive fonts, fade gradient
+- Added 4 new features: keyboard navigation, data refresh indicator, strategy comparison table, trade distribution donut
+- page.tsx grew from 549 to 860 lines (includes new features)
+- Lint passes, dev server stable, no runtime errors
+
+## === CURRENT PROJECT STATUS (Round 8) ===
+
+### Project: US30 ADR Quarter Breakout Strategy Dashboard
+### Status: Production-Ready, Feature-Rich (Round 8)
+
+### Architecture:
+- Frontend: Next.js 16 + TypeScript + Tailwind CSS 4 + shadcn/ui + Recharts + framer-motion
+- Backend: 3 API routes (/api/backtest, /api/quote, /api/news)
+- Data: 2 years of US30 daily OHLC data (499 trading days, 1452 trades)
+- Main File: src/app/page.tsx (860 lines)
+- Components: src/components/dashboard/ (14 files)
+
+### Component File Structure:
+```
+src/components/dashboard/
+├── types.ts              (174 lines) — All interfaces + TabId type
+├── constants.ts          (51 lines)  — Color constants, chart colors, tab variants
+├── hooks.ts              (29 lines)  — useCountUp hook
+├── chart-card.tsx        (192 lines) — ChartCard, SectionDivider, CustomChartTooltip
+├── stat-card.tsx         (134 lines) — StatCard with progress bars + tooltips + ripple
+├── overview-tab.tsx      (596 lines) — Overview + ScoreCard + Volatility + DayOfWeek + TimeOfMonth
+├── levels-tab.tsx        (495 lines) — Levels + SignalStrength + ConfluenceHeatMap + TradeDistributionDonut
+├── variations-tab.tsx    (424 lines) — Variations + RROptimizer + RadarComparison + StrategyComparisonTable
+├── forecast-tab.tsx      (451 lines) — Forecast + MarketNews + TradeSimulator
+├── methodology-tab.tsx   (302 lines) — Methodology 5-step walkthrough
+├── monte-carlo.tsx       (223 lines) — Monte Carlo simulation
+├── advanced-analytics.tsx (797 lines) — Streak + Correlation + Bootstrap + ProfitFactor
+├── advanced-tab.tsx      (97 lines)  — Analytics tab (container)
+└── risk-metrics.tsx      (601 lines) — Risk-Adjusted + CalendarHeatmap + RollingMetrics
+```
+
+### Features (6 tabs):
+1. **Overview**: Strategy Score + Volatility Regime + 10 charts + animated stat cards
+2. **Level Analysis**: Color-coded breakdown table + Signal Strength + Confluence Heat Map + Trade Distribution Donut + Outcome Composition + Trade Log
+3. **Strategy Variations**: 4 variation cards + Strategy Comparison Table + R:R Optimizer + Monte Carlo + Radar Comparison
+4. **Weekly Forecast**: Market News + Risk Warning + Visual Level Map (BEST badge) + Forecast Table + Trade Simulator
+5. **Methodology**: 5-step walkthrough with visual diagrams
+6. **Analytics**: Profit Factor + Streak Analysis + Correlation Scatter + Bootstrap CI + Risk-Adjusted Metrics + Trade Calendar Heatmap + Rolling Metrics Timeline
+
+### Cross-cutting Features:
+- Dark/light mode with glassmorphism + inner glow + dynamic chart colors
+- Real-time US30 price (60s refresh) + Data refresh indicator + Market news (5min cache)
+- Keyboard navigation (1-6 tabs, E export, D dark mode, ? help)
+- Monte Carlo simulation (100/500/1000 runs)
+- Interactive trade simulator + R:R optimizer
+- Performance Score Card + Volatility Regime + Signal Strength Dashboard
+- Strategy Comparison Table + Trade Distribution Donut
+- Animated breadcrumb navigation
+- SVG skeleton loading states
+- Card click ripple effect
+- Responsive font scaling
+- Custom chart tooltips
+- Tab content fade gradient
+- Session timer in header
+- Strategy Summary Export (clipboard)
+- Framer-motion animations throughout
+- Responsive design (mobile-optimized header + tabs)
+
+### Bugs Fixed This Round:
+- CRITICAL: Header overflow on mobile (~480px content in ~375px viewport)
+- CRITICAL: Tab navigation broken on mobile (pointer events intercepted by scroll container)
+- MEDIUM: Ordinal suffix "93th" → "93rd" in Volatility Regime
+- Runtime: handleCopySummary referenced before initialization in keyboard useEffect
+
+### Unresolved Issues / Risks:
+- Finance API subscription may not be active (fallback data used)
+- Backtest shows NO positive edge (22.1% WR vs 33.3% breakeven)
+- OHLC data limitation: ambiguous outcomes via probability model
+- Analytics data limited to recent_trades (30 trades) for some components
+
+### Priority Recommendations for Next Phase:
+1. Expand analytics to use full trade dataset (beyond recent 30)
+2. Add PDF/CSV export for full backtest report
+3. Add comparison with other indices (SPX, NDX)
+4. Implement server-side backtest computation (parameter changes from UI)
+5. Add automated alerts when volatility regime changes
+6. Add intraday data integration for accurate path resolution

@@ -18,7 +18,7 @@ export function MethodologyTab({ data, isDark = false }: { data: BacktestData; i
   return (
     <div className="space-y-6">
       {/* Strategy Overview */}
-      <div className={`rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+      <div className={`rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
         <div className="flex items-center gap-2">
           <BookOpen className="h-4 w-4 text-cyan-500" />
           <h3 className="font-semibold text-sm">Strategy Overview</h3>
@@ -31,7 +31,7 @@ export function MethodologyTab({ data, isDark = false }: { data: BacktestData; i
       <SectionDivider isDark={isDark} />
 
       {/* Step 1: ADR Calculation */}
-      <div className={`rounded-xl border overflow-hidden ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+      <div className={`rounded-xl border overflow-hidden ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
         <div className="h-1" style={{ background: 'linear-gradient(to right, #06b6d4, #8b5cf6)' }} />
         <div className="p-5 space-y-4">
           <div className="flex items-center gap-3">
@@ -61,7 +61,7 @@ export function MethodologyTab({ data, isDark = false }: { data: BacktestData; i
       </div>
 
       {/* Step 2: Quarter Level Derivation */}
-      <div className={`rounded-xl border overflow-hidden ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+      <div className={`rounded-xl border overflow-hidden ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
         <div className="h-1" style={{ background: 'linear-gradient(to right, #8b5cf6, #f97316)' }} />
         <div className="p-5 space-y-4">
           <div className="flex items-center gap-3">
@@ -129,7 +129,7 @@ export function MethodologyTab({ data, isDark = false }: { data: BacktestData; i
       </div>
 
       {/* Step 3: Trade Entry/Exit Rules */}
-      <div className={`rounded-xl border overflow-hidden ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+      <div className={`rounded-xl border overflow-hidden ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
         <div className="h-1" style={{ background: 'linear-gradient(to right, #f97316, #22c55e)' }} />
         <div className="p-5 space-y-4">
           <div className="flex items-center gap-3">
@@ -194,7 +194,7 @@ export function MethodologyTab({ data, isDark = false }: { data: BacktestData; i
       </div>
 
       {/* Step 4: Risk Management */}
-      <div className={`rounded-xl border overflow-hidden ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+      <div className={`rounded-xl border overflow-hidden ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
         <div className="h-1" style={{ background: 'linear-gradient(to right, #22c55e, #f59e0b)' }} />
         <div className="p-5 space-y-4">
           <div className="flex items-center gap-3">
@@ -248,7 +248,7 @@ export function MethodologyTab({ data, isDark = false }: { data: BacktestData; i
       </div>
 
       {/* Step 5: Backtest Methodology */}
-      <div className={`rounded-xl border overflow-hidden ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+      <div className={`rounded-xl border overflow-hidden ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
         <div className="h-1" style={{ background: 'linear-gradient(to right, #f59e0b, #ef4444)' }} />
         <div className="p-5 space-y-4">
           <div className="flex items-center gap-3">

@@ -64,11 +64,26 @@ export function StatCard({ icon, label, value, subtext, color, isDark = false, t
     amber: 'from-amber-500 to-orange-600',
   };
 
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const size = Math.max(rect.width, rect.height) * 2;
+    const ripple = document.createElement('span');
+    ripple.className = 'ripple';
+    ripple.style.width = ripple.style.height = `${size}px`;
+    ripple.style.left = `${x - size / 2}px`;
+    ripple.style.top = `${y - size / 2}px`;
+    e.currentTarget.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 600);
+  };
+
   return (
     <motion.div
-      className={`rounded-xl border p-4 space-y-2 cursor-default relative group overflow-hidden ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}
+      className={`rounded-xl border p-4 space-y-2 cursor-default relative group overflow-hidden ripple-container ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}
       whileHover={{ scale: 1.02, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
       transition={{ duration: 0.15 }}
+      onClick={handleClick}
     >
       {/* Background sparkline */}
       <div className="absolute bottom-2 right-2 pointer-events-none">
@@ -91,7 +106,7 @@ export function StatCard({ icon, label, value, subtext, color, isDark = false, t
           </div>
         )}
       </div>
-      <p className={`text-2xl font-bold tracking-tight bg-gradient-to-r ${gradientColorMap[color]} bg-clip-text text-transparent`}>
+      <p className={`responsive-stat-value font-bold tracking-tight bg-gradient-to-r ${gradientColorMap[color]} bg-clip-text text-transparent`}>
         {value}
       </p>
       <p className="text-xs text-muted-foreground">{subtext}</p>

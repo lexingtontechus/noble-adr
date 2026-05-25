@@ -45,7 +45,7 @@ function PerformanceScoreCard({ data, drawdownPct, isDark = false }: {
   return (
     <div className="flex flex-col md:flex-row gap-4 items-center md:items-start">
       {/* Circular Score Indicator */}
-      <div className={`rounded-xl border p-6 flex flex-col items-center ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+      <div className={`rounded-xl border p-6 flex flex-col items-center ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
         <h3 className="font-semibold text-sm mb-4">Strategy Score</h3>
         <div className="relative w-36 h-36">
           <svg viewBox="0 0 120 120" className="w-full h-full">
@@ -86,7 +86,7 @@ function PerformanceScoreCard({ data, drawdownPct, isDark = false }: {
       </div>
 
       {/* Score Breakdown */}
-      <div className={`flex-1 rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+      <div className={`flex-1 rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
         <h3 className="font-semibold text-sm">Score Breakdown</h3>
         <div className="space-y-3">
           {[
@@ -156,7 +156,7 @@ function VolatilityRegime({ data, isDark = false }: { data: BacktestData; isDark
     : 'Wider ranges — wider stops recommended, increased whipsaw risk';
 
   return (
-    <div className={`rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+    <div className={`rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
       <div className="flex items-center gap-2">
         <svg className="h-4 w-4 text-cyan-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 2v20M2 12h20" />
@@ -188,7 +188,7 @@ function VolatilityRegime({ data, isDark = false }: { data: BacktestData; isDark
               <line x1="64" y1="15" x2="62" y2="19" stroke={isDark ? '#555' : '#9ca3af'} strokeWidth="1" />
             </svg>
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-center">
-              <p className="text-lg font-bold" style={{ color: regimeColor }}>{regimeData.percentile}th</p>
+              <p className="text-lg font-bold" style={{ color: regimeColor }}>{regimeData.percentile}{regimeData.percentile === 1 ? 'st' : regimeData.percentile === 2 ? 'nd' : regimeData.percentile === 3 ? 'rd' : (regimeData.percentile % 100 >= 11 && regimeData.percentile % 100 <= 13) ? 'th' : regimeData.percentile % 10 === 1 ? 'st' : regimeData.percentile % 10 === 2 ? 'nd' : regimeData.percentile % 10 === 3 ? 'rd' : 'th'}</p>
               <p className="text-[9px] text-muted-foreground">percentile</p>
             </div>
           </div>
@@ -504,7 +504,7 @@ export function OverviewTab({ data, levelChartData, quarterChartData, monthlyCha
       {/* Drawdown Analysis */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <motion.div
-          className={`rounded-xl border p-4 space-y-2 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}
+          className={`rounded-xl border p-4 space-y-2 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}
           whileHover={{ scale: 1.01, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
         >
           <div className="flex items-center gap-2">
@@ -518,7 +518,7 @@ export function OverviewTab({ data, levelChartData, quarterChartData, monthlyCha
         </motion.div>
 
         <motion.div
-          className={`rounded-xl border p-4 space-y-2 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}
+          className={`rounded-xl border p-4 space-y-2 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}
           whileHover={{ scale: 1.01, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
         >
           <div className="flex items-center gap-2">
@@ -532,7 +532,7 @@ export function OverviewTab({ data, levelChartData, quarterChartData, monthlyCha
         </motion.div>
 
         <motion.div
-          className={`rounded-xl border p-4 space-y-2 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}
+          className={`rounded-xl border p-4 space-y-2 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}
           whileHover={{ scale: 1.01, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
         >
           <div className="flex items-center gap-2">

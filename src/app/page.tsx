@@ -4,7 +4,8 @@ import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import {
   TrendingUp, Target, AlertTriangle, BarChart3,
   Activity, Shield, Calendar, Info, DollarSign,
-  Sun, Moon, Copy, Check, Microscope, Clock
+  Sun, Moon, Copy, Check, Microscope, Clock,
+  ChevronRight, RefreshCw, Keyboard
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -40,6 +41,9 @@ export default function Home() {
   const [isDark, setIsDark] = useState(false);
   const [copied, setCopied] = useState(false);
   const [sessionSeconds, setSessionSeconds] = useState(0);
+  const [showKeyboardHints, setShowKeyboardHints] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const mainRef = useRef<HTMLDivElement>(null);
 
   // Animated counter values for stat cards
@@ -54,6 +58,7 @@ export default function Home() {
       const res = await fetch('/api/backtest');
       const json = await res.json();
       setData(json);
+      setLastUpdated(new Date());
     } catch (err) {
       console.error('Failed to fetch backtest data:', err);
     } finally {
@@ -66,6 +71,7 @@ export default function Home() {
       const res = await fetch('/api/quote');
       const json = await res.json();
       setQuote(json);
+      setLastUpdated(new Date());
     } catch {
       // silently fail
     }
@@ -133,6 +139,38 @@ export default function Home() {
       setTimeout(() => setCopied(false), 2000);
     }).catch(() => {});
   }, [data]);
+
+  // Manual refresh handler
+  const handleManualRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await Promise.all([fetchQuote(), fetchNews()]);
+    setIsRefreshing(false);
+  }, [fetchQuote, fetchNews]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts when typing in inputs
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return;
+
+      const tabMap: Record<string, TabId> = { '1': 'overview', '2': 'levels', '3': 'variations', '4': 'forecast', '5': 'methodology', '6': 'analytics' };
+
+      if (e.key === '?' || (e.key === '/' && e.shiftKey)) {
+        e.preventDefault();
+        setShowKeyboardHints(prev => !prev);
+      } else if (e.key === 'Escape') {
+        setShowKeyboardHints(false);
+      } else if (tabMap[e.key]) {
+        handleTabChange(tabMap[e.key]);
+      } else if (e.key === 'e' || e.key === 'E') {
+        handleCopySummary();
+      } else if (e.key === 'd' || e.key === 'D') {
+        setIsDark(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleTabChange, handleCopySummary]);
 
   // ===== ALL HOOKS MUST BE BEFORE EARLY RETURN =====
 
@@ -217,6 +255,16 @@ export default function Home() {
 
   const currentAdr5 = data?.forecast?.current_adr_5 ?? 0;
 
+  // Tab labels map for breadcrumb
+  const tabLabels: Record<TabId, string> = {
+    overview: 'Overview',
+    levels: 'Level Analysis',
+    variations: 'Strategy Variations',
+    forecast: 'Weekly Forecast',
+    methodology: 'Methodology',
+    analytics: 'Analytics',
+  };
+
   // ===== EARLY RETURN FOR LOADING =====
   if (loading || !data) {
     return (
@@ -228,27 +276,31 @@ export default function Home() {
             </div>
             <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-cyan-500 to-purple-600 animate-ping opacity-20" />
           </div>
-          <div className="w-64 space-y-3">
-            <div className="h-4 rounded-full bg-muted overflow-hidden">
-              <div
-                className="h-full rounded-full"
-                style={{
-                  background: 'linear-gradient(90deg, transparent, rgba(6,182,212,0.2), transparent)',
-                  backgroundSize: '200% 100%',
-                  animation: 'shimmer 1.5s infinite',
-                }}
-              />
-            </div>
-            <div className="h-3 rounded-full bg-muted overflow-hidden w-48 mx-auto">
-              <div
-                className="h-full rounded-full"
-                style={{
-                  background: 'linear-gradient(90deg, transparent, rgba(139,92,246,0.2), transparent)',
-                  backgroundSize: '200% 100%',
-                  animation: 'shimmer 1.5s infinite 0.3s',
-                }}
-              />
-            </div>
+          {/* SVG-based Skeleton: Bar chart outline */}
+          <div className="w-72 h-36 relative">
+            <svg width="100%" height="100%" viewBox="0 0 288 144" className="opacity-30">
+              {/* Axes */}
+              <line x1="30" y1="10" x2="30" y2="130" stroke="currentColor" strokeWidth="1" className="text-muted-foreground" />
+              <line x1="30" y1="130" x2="280" y2="130" stroke="currentColor" strokeWidth="1" className="text-muted-foreground" />
+              {/* Bar placeholders */}
+              {[0,1,2,3,4,5,6,7].map(i => (
+                <rect key={i} x={40 + i * 30} y={50 + (i % 3) * 20} width="20" height={80 - (i % 3) * 20} rx="3" fill="currentColor" className="text-muted-foreground/20">
+                  <animate attributeName="opacity" values="0.15;0.3;0.15" dur="1.5s" begin={`${i * 0.15}s`} repeatCount="indefinite" />
+                </rect>
+              ))}
+              {/* Reference line */}
+              <line x1="30" y1="55" x2="280" y2="55" stroke="currentColor" strokeWidth="1" strokeDasharray="4 3" className="text-red-500/30" />
+            </svg>
+          </div>
+          {/* Line chart skeleton */}
+          <div className="w-56 h-20 relative">
+            <svg width="100%" height="100%" viewBox="0 0 224 80" className="opacity-25">
+              <path d="M 10 60 Q 40 55 60 45 T 110 50 T 160 30 T 210 40" fill="none" stroke="currentColor" strokeWidth="2" className="text-cyan-500/50">
+                <animate attributeName="stroke-dashoffset" from="400" to="0" dur="2s" repeatCount="indefinite" />
+                <animate attributeName="stroke-dasharray" values="0 400;200 200;400 0" dur="2s" repeatCount="indefinite" />
+              </path>
+              <path d="M 10 60 Q 40 55 60 45 T 110 50 T 160 30 T 210 40 L 210 75 L 10 75 Z" fill="currentColor" className="text-cyan-500/10" />
+            </svg>
           </div>
           <p className="text-muted-foreground text-sm">Loading backtest results...</p>
           <style>{`
@@ -334,6 +386,52 @@ export default function Home() {
           scrollbar-width: thin;
           scrollbar-color: hsl(var(--primary) / 0.3) transparent;
         }
+        /* Card ripple effect */
+        .ripple-container {
+          position: relative;
+          overflow: hidden;
+        }
+        .ripple-container .ripple {
+          position: absolute;
+          border-radius: 50%;
+          background: rgba(6, 182, 212, 0.15);
+          transform: scale(0);
+          animation: rippleAnimation 0.6s ease-out;
+          pointer-events: none;
+        }
+        @keyframes rippleAnimation {
+          to {
+            transform: scale(4);
+            opacity: 0;
+          }
+        }
+        /* Glassmorphism inner glow for dark mode */
+        .dark .glassmorphism-card {
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+        }
+        /* Tab content fade gradient */
+        .tab-content-wrapper {
+          position: relative;
+        }
+        .tab-content-wrapper::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 60px;
+          background: linear-gradient(to top, hsl(var(--background)), transparent);
+          pointer-events: none;
+          opacity: 0;
+          transition: opacity 0.3s;
+        }
+        .tab-content-wrapper.scrollable::after {
+          opacity: 1;
+        }
+        /* Responsive stat value font scaling */
+        .responsive-stat-value {
+          font-size: clamp(1.25rem, 3vw, 1.75rem);
+        }
       `}</style>
 
       {/* Decorative Background Orbs (hidden on mobile) */}
@@ -360,9 +458,9 @@ export default function Home() {
                 <p className="text-xs text-muted-foreground">{data.metadata.symbol} · {data.metadata.period}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              {/* Session Timer */}
-              <div className="flex items-center gap-1 text-xs text-muted-foreground font-mono">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
+              {/* Session Timer - hidden on mobile */}
+              <div className="hidden md:flex items-center gap-1 text-xs text-muted-foreground font-mono">
                 <Clock className="h-3 w-3" />
                 <span>Session: {Math.floor(sessionSeconds / 60)}m {sessionSeconds % 60}s</span>
               </div>
@@ -371,7 +469,7 @@ export default function Home() {
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-full border bg-card"
+                  className="flex items-center gap-1.5 text-xs px-2 py-1.5 sm:px-2.5 sm:py-1.5 rounded-full border bg-card"
                 >
                   <DollarSign className="h-3 w-3 text-muted-foreground" />
                   <span className="font-mono font-semibold">{quote.price.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
@@ -381,6 +479,20 @@ export default function Home() {
                   <span className={`h-1.5 w-1.5 rounded-full ${quote.source === 'live' ? 'bg-green-500' : 'bg-amber-500'}`} title={quote.source === 'live' ? 'Live data' : 'Fallback data'} />
                 </motion.div>
               )}
+              {/* Data Refresh Indicator */}
+              {lastUpdated && (
+                <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                  <span>Updated {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  <motion.button
+                    onClick={handleManualRefresh}
+                    className="h-5 w-5 rounded-full border border-border flex items-center justify-center hover:bg-muted transition-colors"
+                    whileTap={{ scale: 0.9 }}
+                    title="Refresh data"
+                  >
+                    <RefreshCw className={`h-2.5 w-2.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  </motion.button>
+                </div>
+              )}
               <motion.span
                 className="text-xs px-2 py-1 rounded-full bg-red-500/10 text-red-500 font-medium border border-red-500/20"
                 animate={{ opacity: [1, 0.6, 1] }}
@@ -388,18 +500,18 @@ export default function Home() {
               >
                 NO POSITIVE EDGE
               </motion.span>
-              <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground font-medium">
+              <span className="hidden sm:inline text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground font-medium">
                 2:1 R:R
               </span>
               <motion.button
                 onClick={handleCopySummary}
-                className="h-8 rounded-lg border border-border flex items-center gap-1.5 px-2.5 hover:bg-muted transition-colors text-xs font-medium"
+                className="h-8 rounded-lg border border-border flex items-center gap-1.5 px-2 sm:px-2.5 hover:bg-muted transition-colors text-xs font-medium"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 title="Copy strategy summary"
               >
                 {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
-                <span className={copied ? 'text-green-500' : 'text-muted-foreground'}>{copied ? 'Copied!' : 'Export'}</span>
+                <span className={`hidden sm:inline ${copied ? 'text-green-500' : 'text-muted-foreground'}`}>{copied ? 'Copied!' : 'Export'}</span>
               </motion.button>
               <motion.button
                 onClick={() => setIsDark(!isDark)}
@@ -414,6 +526,32 @@ export default function Home() {
           </div>
         </div>
       </header>
+
+      {/* Animated Breadcrumb Navigation */}
+      <div className="border-b border-border bg-card/50 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+          <div className="flex items-center gap-1.5 text-xs">
+            <span className="text-muted-foreground">Dashboard</span>
+            <motion.span
+              key={`chevron-${activeTab}`}
+              initial={{ opacity: 0, x: -4 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ChevronRight className="h-3 w-3 text-muted-foreground/50" />
+            </motion.span>
+            <motion.span
+              key={`breadcrumb-${activeTab}`}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              className="text-foreground font-medium"
+            >
+              {tabLabels[activeTab]}
+            </motion.span>
+          </div>
+        </div>
+      </div>
 
       {/* Main Content */}
       <main ref={mainRef} className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6 relative z-10">
@@ -496,26 +634,26 @@ export default function Home() {
 
         {/* Modern Pill-Style Tab Navigation */}
         <div className="flex items-center justify-center">
-          <div className="inline-flex items-center gap-1 p-1 rounded-full bg-muted overflow-x-auto max-w-full">
+          <div className="inline-flex items-center gap-1 p-1 rounded-full bg-muted max-w-full overflow-x-auto scrollbar-none" style={{ WebkitOverflowScrolling: 'touch' }}>
             {[
               { id: 'overview', label: 'Overview', icon: <BarChart3 className="h-3.5 w-3.5" /> },
-              { id: 'levels', label: 'Level Analysis', icon: <Target className="h-3.5 w-3.5" /> },
-              { id: 'variations', label: 'Strategy Variations', icon: <Activity className="h-3.5 w-3.5" /> },
-              { id: 'forecast', label: 'Weekly Forecast', icon: <Calendar className="h-3.5 w-3.5" /> },
-              { id: 'methodology', label: 'Methodology', icon: <Info className="h-3.5 w-3.5" /> },
+              { id: 'levels', label: 'Levels', icon: <Target className="h-3.5 w-3.5" /> },
+              { id: 'variations', label: 'Variations', icon: <Activity className="h-3.5 w-3.5" /> },
+              { id: 'forecast', label: 'Forecast', icon: <Calendar className="h-3.5 w-3.5" /> },
+              { id: 'methodology', label: 'Method', icon: <Info className="h-3.5 w-3.5" /> },
               { id: 'analytics', label: 'Analytics', icon: <Microscope className="h-3.5 w-3.5" /> },
             ].map(tab => (
               <button
                 key={tab.id}
                 onClick={() => handleTabChange(tab.id as TabId)}
-                className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 whitespace-nowrap ${
+                className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 whitespace-nowrap touch-manipulation ${
                   activeTab === tab.id
                     ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:bg-muted/70'
                 }`}
               >
                 {tab.icon}
-                {tab.label}
+                <span className="hidden xs:inline sm:inline">{tab.label}</span>
               </button>
             ))}
           </div>
@@ -624,7 +762,62 @@ export default function Home() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Tab Content Fade Gradient - indicates more content below */}
+        <div className="h-16 -mt-6 pointer-events-none" style={{
+          background: 'linear-gradient(to top, hsl(var(--background)), transparent)'
+        }} />
       </main>
+
+      {/* Keyboard Shortcuts Overlay */}
+      <AnimatePresence>
+        {showKeyboardHints && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+            onClick={() => setShowKeyboardHints(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              transition={{ duration: 0.2 }}
+              className={`rounded-xl border p-6 space-y-4 w-80 shadow-2xl ${isDark ? 'bg-[#1a1a2e] border-white/10' : 'bg-card border-border'}`}
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-2">
+                <Keyboard className="h-5 w-5 text-cyan-500" />
+                <h3 className="font-semibold text-sm">Keyboard Shortcuts</h3>
+              </div>
+              <div className="space-y-2">
+                {[
+                  { keys: ['1', '2', '3', '4', '5', '6'], desc: 'Switch tabs' },
+                  { key: 'E', desc: 'Export summary' },
+                  { key: 'D', desc: 'Toggle dark mode' },
+                  { key: '?', desc: 'Show this help' },
+                  { key: 'Esc', desc: 'Close this overlay' },
+                ].map((shortcut, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">{shortcut.desc}</span>
+                    <div className="flex items-center gap-1">
+                      {'keys' in shortcut
+                        ? (shortcut.keys as string[]).map(k => (
+                          <kbd key={k} className="px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px] font-medium">{k}</kbd>
+                        ))
+                        : <kbd className="px-2 py-0.5 rounded bg-muted border border-border font-mono text-[10px] font-medium">{shortcut.key}</kbd>
+                      }
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[10px] text-muted-foreground text-center">Press <kbd className="px-1 py-0.5 rounded bg-muted border border-border font-mono text-[9px]">?</kbd> or <kbd className="px-1 py-0.5 rounded bg-muted border border-border font-mono text-[9px]">Esc</kbd> to close</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Footer */}
       <footer className={`mt-auto relative z-10 ${isDark ? 'border-white/10 bg-white/[0.02]' : 'border-border bg-card/50'}`}>

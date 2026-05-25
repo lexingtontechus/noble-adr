@@ -2,13 +2,14 @@
 
 import React, { useMemo, useState } from 'react';
 import {
-  ArrowUpRight, ArrowDownRight, Zap, Calculator
+  ArrowUpRight, ArrowDownRight, Zap, Calculator, Trophy
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
   ResponsiveContainer, LineChart, Line, ReferenceLine, Legend,
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar
 } from 'recharts';
+import { motion } from 'framer-motion';
 import type { BacktestData, VariationResult } from './types';
 import { COLORS, LIGHT_CHART_COLORS, DARK_CHART_COLORS } from './constants';
 import { ChartCard, CustomChartTooltip } from './chart-card';
@@ -25,7 +26,7 @@ function RROptimizer({ isDark = false }: { isDark?: boolean }) {
   const minRRNeeded = Math.round((1 / (currentWR / 100) - 1) * 100) / 100;
 
   return (
-    <div className={`rounded-xl border p-5 space-y-5 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+    <div className={`rounded-xl border p-5 space-y-5 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
       <div className="flex items-center gap-2">
         <Calculator className="h-4 w-4 text-amber-500" />
         <div>
@@ -232,6 +233,80 @@ function RadarComparisonChart({ variations, isDark = false }: { variations: Vari
   );
 }
 
+// ====== STRATEGY COMPARISON TABLE ======
+
+function StrategyComparisonTable({ variations, isDark = false }: { variations: VariationResult[]; isDark?: boolean }) {
+  if (variations.length === 0) return null;
+
+  // Find the best value for each column
+  const bestWinRate = Math.max(...variations.map(v => v.win_rate));
+  const bestExpectancy = Math.max(...variations.map(v => v.expectancy));
+  const bestKelly = Math.max(...variations.map(v => v.kelly_pct));
+  const bestTrades = Math.max(...variations.map(v => v.total_trades));
+  const bestEquity = Math.max(...variations.map(v => v.final_equity));
+
+  const columns = [
+    { key: 'name', label: 'Name', format: (v: VariationResult) => v.name, isBest: () => false },
+    { key: 'win_rate', label: 'Win Rate', format: (v: VariationResult) => `${v.win_rate}%`, isBest: (v: VariationResult) => v.win_rate === bestWinRate },
+    { key: 'expectancy', label: 'Expectancy', format: (v: VariationResult) => `${v.expectancy > 0 ? '+' : ''}${v.expectancy.toFixed(4)}`, isBest: (v: VariationResult) => v.expectancy === bestExpectancy },
+    { key: 'kelly_pct', label: 'Kelly %', format: (v: VariationResult) => `${v.kelly_pct}%`, isBest: (v: VariationResult) => v.kelly_pct === bestKelly },
+    { key: 'total_trades', label: 'Total Trades', format: (v: VariationResult) => v.total_trades.toLocaleString(), isBest: (v: VariationResult) => v.total_trades === bestTrades },
+    { key: 'final_equity', label: 'Final Equity', format: (v: VariationResult) => `$${v.final_equity.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, isBest: (v: VariationResult) => v.final_equity === bestEquity },
+  ];
+
+  return (
+    <motion.div
+      className={`rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <div className="flex items-center gap-2">
+        <Trophy className="h-4 w-4 text-amber-500" />
+        <div>
+          <h3 className="font-semibold text-sm">Strategy Comparison Table</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Side-by-side comparison — best values highlighted in green</p>
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border bg-muted/30">
+              {columns.map(col => (
+                <th key={col.key} className="px-4 py-3 text-left font-medium text-muted-foreground whitespace-nowrap">
+                  {col.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {variations.map((v, i) => (
+              <tr key={v.name} className={`border-b border-border last:border-0 ${i % 2 === 0 ? '' : 'bg-muted/10'}`}>
+                {columns.map(col => {
+                  const isBest = col.isBest(v);
+                  return (
+                    <td key={col.key} className={`px-4 py-3 font-mono whitespace-nowrap ${isBest ? 'text-green-500 font-bold' : ''}`}>
+                      <div className="flex items-center gap-1.5">
+                        {isBest && col.key !== 'name' && <span className="text-[9px]">★</span>}
+                        {col.format(v)}
+                      </div>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+        <span className="flex items-center gap-1"><span className="text-green-500">★</span>Best in column</span>
+        <span>·</span>
+        <span>Green indicates the highest value per metric</span>
+      </div>
+    </motion.div>
+  );
+}
+
 // ====== VARIATIONS TAB ======
 
 export function VariationsTab({ data, isDark = false }: { data: BacktestData; isDark?: boolean }) {
@@ -241,7 +316,7 @@ export function VariationsTab({ data, isDark = false }: { data: BacktestData; is
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {variations.map((v) => (
-          <div key={v.name} className={`rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+          <div key={v.name} className={`rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-sm">{v.name}</h3>
               <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${v.positive_edge ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
@@ -299,6 +374,9 @@ export function VariationsTab({ data, isDark = false }: { data: BacktestData; is
           </div>
         ))}
       </div>
+
+      {/* Strategy Comparison Table */}
+      <StrategyComparisonTable variations={variations} isDark={isDark} />
 
       {/* R:R Optimizer Calculator */}
       <RROptimizer isDark={isDark} />

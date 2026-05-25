@@ -3,11 +3,15 @@
 import React, { useMemo } from 'react';
 import {
   ArrowUpRight, ArrowDownRight, ChevronUp, ChevronDown,
-  BarChart3, Activity
+  BarChart3, Activity, PieChart as PieChartIcon
 } from 'lucide-react';
+import {
+  PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend
+} from 'recharts';
 import { motion } from 'framer-motion';
 import type { BacktestData } from './types';
-import { COLORS, QUARTER_COLORS } from './constants';
+import { COLORS, QUARTER_COLORS, LIGHT_CHART_COLORS, DARK_CHART_COLORS } from './constants';
+import { CustomChartTooltip } from './chart-card';
 
 // ====== SIGNAL STRENGTH DASHBOARD ======
 
@@ -38,7 +42,7 @@ function SignalStrengthDashboard({ data, isDark = false }: { data: BacktestData;
   const getScoreColor = (score: number) => score >= 66 ? '#22c55e' : score >= 33 ? '#f59e0b' : '#ef4444';
 
   return (
-    <div className={`rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+    <div className={`rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
       <div className="flex items-center gap-2">
         <Activity className="h-4 w-4 text-cyan-500" />
         <div>
@@ -115,7 +119,7 @@ function ConfluenceHeatMap({ data, isDark = false }: { data: BacktestData; isDar
   };
 
   return (
-    <div className={`rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+    <div className={`rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
       <div className="flex items-center gap-2">
         <BarChart3 className="h-4 w-4 text-cyan-500" />
         <div>
@@ -155,13 +159,126 @@ function ConfluenceHeatMap({ data, isDark = false }: { data: BacktestData; isDar
   );
 }
 
+// ====== TRADE DISTRIBUTION DONUT CHART ======
+
+function TradeDistributionDonut({ data, isDark = false }: { data: BacktestData; isDark?: boolean }) {
+  const cc = isDark ? DARK_CHART_COLORS : LIGHT_CHART_COLORS;
+
+  const distributionData = useMemo(() => {
+    // Aggregate outcome counts across all levels
+    let totalAmbiguous = 0;
+    let totalPureLoss = 0;
+    let totalEodClose = 0;
+
+    data.level_breakdown.forEach(level => {
+      totalAmbiguous += level.ambiguous;
+      totalPureLoss += level.losses;
+      totalEodClose += level.eod_closes;
+    });
+
+    return [
+      { name: 'Ambiguous', value: totalAmbiguous, color: '#f59e0b' },
+      { name: 'Pure Loss', value: totalPureLoss, color: '#ef4444' },
+      { name: 'EOD Close', value: totalEodClose, color: '#6b7280' },
+    ].filter(d => d.value > 0);
+  }, [data]);
+
+  const totalTrades = distributionData.reduce((sum, d) => sum + d.value, 0);
+
+  if (distributionData.length === 0) return null;
+
+  return (
+    <motion.div
+      className={`rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <div className="flex items-center gap-2">
+        <PieChartIcon className="h-4 w-4 text-purple-500" />
+        <div>
+          <h3 className="font-semibold text-sm">Trade Distribution by Outcome</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Overall outcome breakdown across all levels</p>
+        </div>
+      </div>
+      <div className="flex flex-col md:flex-row items-center gap-4">
+        <div className="h-56 w-56 flex-shrink-0">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={distributionData}
+                cx="50%"
+                cy="50%"
+                innerRadius={55}
+                outerRadius={80}
+                paddingAngle={3}
+                dataKey="value"
+                strokeWidth={2}
+                stroke={isDark ? '#1a1a2e' : '#ffffff'}
+              >
+                {distributionData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} fillOpacity={0.85} />
+                ))}
+              </Pie>
+              <RechartsTooltip
+                content={<CustomChartTooltip isDark={isDark} formatter={(value: number, name: string) => {
+                  const pct = totalTrades > 0 ? ((value / totalTrades) * 100).toFixed(1) : '0';
+                  return [`${value} trades (${pct}%)`, name];
+                }} />}
+              />
+              <Legend
+                wrapperStyle={{ fontSize: '11px' }}
+                formatter={(value: string) => <span style={{ color: cc.text }}>{value}</span>}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="flex-1 space-y-3 w-full">
+          {distributionData.map(d => {
+            const pct = totalTrades > 0 ? ((d.value / totalTrades) * 100).toFixed(1) : '0';
+            return (
+              <div key={d.name} className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-full" style={{ backgroundColor: d.color }} />
+                    <span className="font-medium">{d.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <span className="font-mono">{d.value}</span>
+                    <span className="font-mono">({pct}%)</span>
+                  </div>
+                </div>
+                <div className="h-2 rounded-full bg-muted overflow-hidden">
+                  <motion.div
+                    className="h-full rounded-full"
+                    style={{ backgroundColor: d.color, opacity: 0.8 }}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${pct}%` }}
+                    transition={{ duration: 0.8, ease: 'easeOut' }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+          <div className="pt-2 border-t border-border text-xs text-muted-foreground">
+            <div className="flex justify-between">
+              <span>Total Trades</span>
+              <span className="font-mono font-medium">{totalTrades.toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 // ====== LEVELS TAB ======
 
 export function LevelsTab({ data, isDark = false }: { data: BacktestData; isDark?: boolean }) {
   return (
     <div className="space-y-6">
       {/* Level Breakdown Table */}
-      <div className={`rounded-xl border overflow-hidden ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+      <div className={`rounded-xl border overflow-hidden ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
         <div className="p-5 border-b border-border">
           <h3 className="font-semibold text-sm">Breakdown by ADR Quarter Level</h3>
           <p className="text-xs text-muted-foreground mt-0.5">All 8 breakout levels — probability-weighted outcomes</p>
@@ -243,9 +360,12 @@ export function LevelsTab({ data, isDark = false }: { data: BacktestData; isDark
       {/* Confluence Heat Map */}
       <ConfluenceHeatMap data={data} isDark={isDark} />
 
+      {/* Trade Distribution Donut Chart */}
+      <TradeDistributionDonut data={data} isDark={isDark} />
+
       {/* Outcome Breakdown */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className={`rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+        <div className={`rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
           <h3 className="font-semibold text-sm">Outcome Composition by Level</h3>
           <div className="space-y-3">
             {data.level_breakdown.map(level => {
@@ -280,7 +400,7 @@ export function LevelsTab({ data, isDark = false }: { data: BacktestData; isDark
           </div>
         </div>
 
-        <div className={`rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+        <div className={`rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
           <h3 className="font-semibold text-sm">Quarter Level Summary</h3>
           <p className="text-xs text-muted-foreground">Aggregated across Long + Short directions</p>
           <div className="space-y-3">
@@ -320,7 +440,7 @@ export function LevelsTab({ data, isDark = false }: { data: BacktestData; isDark
       </div>
 
       {/* Recent Trades */}
-      <div className={`rounded-xl border overflow-hidden ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+      <div className={`rounded-xl border overflow-hidden ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
         <div className="p-5 border-b border-border">
           <h3 className="font-semibold text-sm">Recent Trade Log</h3>
           <p className="text-xs text-muted-foreground mt-0.5">Last 30 simulated trades</p>

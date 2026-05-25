@@ -24,12 +24,27 @@ export function ChartCard({ title, subtitle, children, gradientFrom = 'cyan', gr
     amber: '#f59e0b',
   };
 
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const size = Math.max(rect.width, rect.height) * 2;
+    const ripple = document.createElement('span');
+    ripple.className = 'ripple';
+    ripple.style.width = ripple.style.height = `${size}px`;
+    ripple.style.left = `${x - size / 2}px`;
+    ripple.style.top = `${y - size / 2}px`;
+    e.currentTarget.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 600);
+  };
+
   return (
     <motion.div
-      className={`rounded-xl border overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}
+      className={`rounded-xl border overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ripple-container ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
+      onClick={handleClick}
     >
       <div
         className="h-1"
@@ -37,7 +52,7 @@ export function ChartCard({ title, subtitle, children, gradientFrom = 'cyan', gr
           background: `linear-gradient(to right, ${gradientMap[gradientFrom] || gradientMap.cyan}, ${gradientMap[gradientTo] || gradientMap.purple})`,
         }}
       />
-      <div className="p-5 space-y-4 relative">
+      <div className="p-5 space-y-4 relative" style={isDark ? { boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)' } : undefined}>
         <div>
           <h3 className="font-semibold text-sm">{title}</h3>
           {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}

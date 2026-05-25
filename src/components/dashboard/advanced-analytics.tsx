@@ -154,7 +154,7 @@ export function StreakAnalysis({ data, isDark = false }: { data: BacktestData; i
       {/* Key Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <motion.div
-          className={`rounded-xl border p-4 space-y-2 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}
+          className={`rounded-xl border p-4 space-y-2 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}
           whileHover={{ scale: 1.01 }}
           transition={{ duration: 0.15 }}
         >
@@ -169,7 +169,7 @@ export function StreakAnalysis({ data, isDark = false }: { data: BacktestData; i
         </motion.div>
 
         <motion.div
-          className={`rounded-xl border p-4 space-y-2 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}
+          className={`rounded-xl border p-4 space-y-2 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}
           whileHover={{ scale: 1.01 }}
           transition={{ duration: 0.15 }}
         >
@@ -184,7 +184,7 @@ export function StreakAnalysis({ data, isDark = false }: { data: BacktestData; i
         </motion.div>
 
         <motion.div
-          className={`rounded-xl border p-4 space-y-2 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}
+          className={`rounded-xl border p-4 space-y-2 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}
           whileHover={{ scale: 1.01 }}
           transition={{ duration: 0.15 }}
         >
@@ -199,7 +199,7 @@ export function StreakAnalysis({ data, isDark = false }: { data: BacktestData; i
         </motion.div>
 
         <motion.div
-          className={`rounded-xl border p-4 space-y-2 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}
+          className={`rounded-xl border p-4 space-y-2 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}
           whileHover={{ scale: 1.01 }}
           transition={{ duration: 0.15 }}
         >
@@ -455,7 +455,7 @@ export function BootstrapConfidence({ data, isDark = false }: { data: BacktestDa
 
   return (
     <div className="space-y-4">
-      <div className={`rounded-xl border p-5 space-y-5 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+      <div className={`rounded-xl border p-5 space-y-5 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4 text-amber-500" />
@@ -663,7 +663,7 @@ export function ProfitFactorCard({ data, isDark = false }: { data: BacktestData;
   const gaugePct = (pfClamped / gaugeMax) * 100;
 
   return (
-    <div className={`rounded-xl border p-5 space-y-5 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+    <div className={`rounded-xl border p-5 space-y-5 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
       <div className="flex items-center gap-2">
         <DollarSign className="h-4 w-4 text-green-500" />
         <div>

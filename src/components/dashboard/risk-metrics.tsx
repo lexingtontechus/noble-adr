@@ -151,7 +151,7 @@ export function RiskAdjustedMetrics({ data, isDark = false }: { data: BacktestDa
           return (
             <motion.div
               key={metric.key}
-              className={`rounded-xl border p-5 space-y-3 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}
+              className={`rounded-xl border p-5 space-y-3 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: idx * 0.1 }}
@@ -191,7 +191,7 @@ export function RiskAdjustedMetrics({ data, isDark = false }: { data: BacktestDa
       </div>
 
       {/* Methodology Note */}
-      <div className={`rounded-xl border p-4 space-y-2 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+      <div className={`rounded-xl border p-4 space-y-2 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
         <h4 className="text-xs font-semibold">Risk-Adjusted Metrics Methodology</h4>
         <div className="space-y-1 text-[10px] text-muted-foreground leading-relaxed">
           <p><span className="font-medium text-foreground">Sharpe Ratio:</span> (Mean daily return − risk-free rate) / standard deviation of daily returns, annualized by √252. Risk-free rate assumed at 5% annualized (0.05/252 daily). Values &gt;1 indicate excess returns above risk-free per unit of total risk.</p>
