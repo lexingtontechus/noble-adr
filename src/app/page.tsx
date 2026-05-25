@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import {
   TrendingUp, Target, AlertTriangle, BarChart3,
   Activity, Shield, Calendar, Info, DollarSign,
-  Sun, Moon, Copy, Check
+  Sun, Moon, Copy, Check, Microscope
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -17,6 +17,7 @@ import { LevelsTab } from '@/components/dashboard/levels-tab';
 import { VariationsTab } from '@/components/dashboard/variations-tab';
 import { ForecastTab } from '@/components/dashboard/forecast-tab';
 import { MethodologyTab } from '@/components/dashboard/methodology-tab';
+import { AnalyticsTab } from '@/components/dashboard/advanced-tab';
 
 // ====== MAIN HOME COMPONENT ======
 
@@ -473,6 +474,7 @@ export default function Home() {
               { id: 'variations', label: 'Strategy Variations', icon: <Activity className="h-3.5 w-3.5" /> },
               { id: 'forecast', label: 'Weekly Forecast', icon: <Calendar className="h-3.5 w-3.5" /> },
               { id: 'methodology', label: 'Methodology', icon: <Info className="h-3.5 w-3.5" /> },
+              { id: 'analytics', label: 'Analytics', icon: <Microscope className="h-3.5 w-3.5" /> },
             ].map(tab => (
               <button
                 key={tab.id}
@@ -525,6 +527,11 @@ export default function Home() {
           {activeTab === 'methodology' && (
             <motion.div key="methodology" variants={tabVariants} initial="hidden" animate="visible" exit="exit">
               <MethodologyTab data={data} isDark={isDark} />
+            </motion.div>
+          )}
+          {activeTab === 'analytics' && (
+            <motion.div key="analytics" variants={tabVariants} initial="hidden" animate="visible" exit="exit">
+              <AnalyticsTab data={data} isDark={isDark} />
             </motion.div>
           )}
         </AnimatePresence>

@@ -171,4 +171,4 @@ export interface DrawdownInfo {
   drawdownCurve: { date: string; drawdown: number; equity: number }[];
 }
 
-export type TabId = 'overview' | 'levels' | 'variations' | 'forecast' | 'methodology';
+export type TabId = 'overview' | 'levels' | 'variations' | 'forecast' | 'methodology' | 'analytics';

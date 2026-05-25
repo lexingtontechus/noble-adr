@@ -4,6 +4,39 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Info } from 'lucide-react';
 
+// ====== MINI SPARKLINE ======
+
+function MiniSparkline({ color, isDark }: { color: 'cyan' | 'green' | 'red' | 'amber'; isDark?: boolean }) {
+  const colorMap = {
+    cyan: '#06b6d4',
+    green: '#22c55e',
+    red: '#ef4444',
+    amber: '#f59e0b',
+  };
+
+  // Generate deterministic sparkline points based on color
+  const points = [3, 5, 2, 7, 4, 8, 5, 3, 6, 4, 7, 2, 5, 8, 3];
+  const max = Math.max(...points);
+  const width = 60;
+  const height = 16;
+  const stepX = width / (points.length - 1);
+
+  const pathD = points.map((p, i) => {
+    const x = i * stepX;
+    const y = height - (p / max) * height;
+    return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+  }).join(' ');
+
+  const areaD = pathD + ` L ${width} ${height} L 0 ${height} Z`;
+
+  return (
+    <svg width={width} height={height} className="opacity-30">
+      <path d={areaD} fill={colorMap[color]} fillOpacity={0.2} />
+      <path d={pathD} fill="none" stroke={colorMap[color]} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 // ====== STAT CARD ======
 
 export function StatCard({ icon, label, value, subtext, color, isDark = false, tooltip, progressPct, progressBreakevenPct }: {
@@ -24,12 +57,24 @@ export function StatCard({ icon, label, value, subtext, color, isDark = false, t
     amber: 'bg-amber-500/10 text-amber-500',
   };
 
+  const gradientColorMap = {
+    cyan: 'from-cyan-500 to-cyan-600',
+    green: 'from-green-500 to-emerald-600',
+    red: 'from-red-500 to-rose-600',
+    amber: 'from-amber-500 to-orange-600',
+  };
+
   return (
     <motion.div
-      className={`rounded-xl border p-4 space-y-2 cursor-default relative group ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}
+      className={`rounded-xl border p-4 space-y-2 cursor-default relative group overflow-hidden ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}
       whileHover={{ scale: 1.02, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
       transition={{ duration: 0.15 }}
     >
+      {/* Background sparkline */}
+      <div className="absolute bottom-2 right-2 pointer-events-none">
+        <MiniSparkline color={color} isDark={isDark} />
+      </div>
+
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className={`h-7 w-7 rounded-md flex items-center justify-center ${iconColorMap[color]}`}>
@@ -46,14 +91,18 @@ export function StatCard({ icon, label, value, subtext, color, isDark = false, t
           </div>
         )}
       </div>
-      <p className="text-2xl font-bold tracking-tight">{value}</p>
+      <p className={`text-2xl font-bold tracking-tight bg-gradient-to-r ${gradientColorMap[color]} bg-clip-text text-transparent`}>
+        {value}
+      </p>
       <p className="text-xs text-muted-foreground">{subtext}</p>
       {progressPct !== undefined && (
         <div className="pt-1">
           <div className="h-1.5 rounded-full bg-muted overflow-hidden relative">
-            <div
+            <motion.div
               className={`h-full rounded-full ${progressPct >= (progressBreakevenPct ?? 33.3) ? 'bg-green-500' : 'bg-red-500'}`}
-              style={{ width: `${Math.min(100, progressPct)}%` }}
+              initial={{ width: 0 }}
+              animate={{ width: `${Math.min(100, progressPct)}%` }}
+              transition={{ duration: 0.8, ease: 'easeOut' }}
             />
             {progressBreakevenPct !== undefined && (
               <div

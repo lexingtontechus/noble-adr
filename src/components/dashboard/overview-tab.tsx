@@ -249,7 +249,7 @@ function DayOfWeekChart({ data, isDark = false }: { data: BacktestData; isDark?:
         const dayName = days[date.getDay()];
         if (dayStats[dayName]) {
           dayStats[dayName].total++;
-          if (trade.outcome === 'win') dayStats[dayName].wins++;
+          dayStats[dayName].wins += trade.win_prob; // probabilistic win counting
         }
       } catch {
         // skip invalid dates
@@ -296,7 +296,7 @@ function DayOfWeekChart({ data, isDark = false }: { data: BacktestData; isDark?:
         {dayOfWeekData.map(d => (
           <span key={d.day} className="flex items-center gap-1">
             <span className={`h-1.5 w-1.5 rounded-full ${d.winRate >= 33.3 ? 'bg-green-500' : 'bg-red-500'}`} />
-            {d.day}: {d.winRate}% ({d.trades})
+            {d.day}: {d.winRate.toFixed(1)}% ({d.trades})
           </span>
         ))}
       </div>
@@ -321,9 +321,7 @@ function TimeOfMonthChart({ data, isDark = false }: { data: BacktestData; isDark
       const day = new Date(t.date).getDate();
       const week = day <= 7 ? 'Week 1' : day <= 14 ? 'Week 2' : day <= 21 ? 'Week 3' : 'Week 4+';
       weeks[week].total++;
-      if (t.outcome === 'win' || (t.outcome === 'ambiguous' && t.pnl_pct > 0)) {
-        weeks[week].wins++;
-      }
+      weeks[week].wins += t.win_prob; // probabilistic win counting
     });
 
     return Object.entries(weeks).map(([name, { wins, total }]) => ({

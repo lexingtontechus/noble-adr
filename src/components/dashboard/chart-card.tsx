@@ -1,11 +1,12 @@
 'use client';
 
 import React from 'react';
+import { motion } from 'framer-motion';
 import { LIGHT_CHART_COLORS, DARK_CHART_COLORS } from './constants';
 
 // ====== CHART CARD ======
 
-// Chart card wrapper with gradient top border, glassmorphism, and hover effects
+// Chart card wrapper with gradient top border, glassmorphism, hover effects, and entrance animation
 export function ChartCard({ title, subtitle, children, gradientFrom = 'cyan', gradientTo = 'purple', isDark = false }: {
   title: string;
   subtitle?: string;
@@ -24,8 +25,11 @@ export function ChartCard({ title, subtitle, children, gradientFrom = 'cyan', gr
   };
 
   return (
-    <div
+    <motion.div
       className={`rounded-xl border overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: 'easeOut' }}
     >
       <div
         className="h-1"
@@ -44,7 +48,7 @@ export function ChartCard({ title, subtitle, children, gradientFrom = 'cyan', gr
           background: `linear-gradient(to top, ${isDark ? 'rgba(139,92,246,0.03)' : 'rgba(139,92,246,0.02)'}, transparent)`
         }} />
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -53,11 +57,14 @@ export function ChartCard({ title, subtitle, children, gradientFrom = 'cyan', gr
 // Section divider with gradient
 export function SectionDivider({ isDark = false }: { isDark?: boolean } = {}) {
   return (
-    <div
+    <motion.div
       className="h-px w-full my-2"
       style={{
         background: `linear-gradient(to right, transparent, ${isDark ? DARK_CHART_COLORS.divider : LIGHT_CHART_COLORS.divider}, transparent)`,
       }}
+      initial={{ opacity: 0, scaleX: 0.3 }}
+      animate={{ opacity: 1, scaleX: 1 }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
     />
   );
 }

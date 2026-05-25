@@ -247,10 +247,11 @@ export function LevelsTab({ data, isDark = false }: { data: BacktestData; isDark
           <div className="space-y-3">
             {data.level_breakdown.map(level => {
               const total = level.total_trades;
-              const winPct = (level.wins / total * 100).toFixed(0);
-              const lossPct = (level.losses / total * 100).toFixed(0);
-              const ambPct = (level.ambiguous / total * 100).toFixed(0);
-              const eodPct = (level.eod_closes / total * 100).toFixed(0);
+              const probWinPct = level.win_rate; // probability-weighted win rate (e.g. 24.3%)
+              const pureLossPct = (level.losses / total * 100);
+              const ambPct = (level.ambiguous / total * 100);
+              const eodPct = (level.eod_closes / total * 100);
+              const ambLossPct = Math.max(0, 100 - probWinPct - pureLossPct - eodPct); // probability-weighted losses from ambiguous trades
 
               return (
                 <div key={level.level} className="space-y-1">
@@ -259,16 +260,16 @@ export function LevelsTab({ data, isDark = false }: { data: BacktestData; isDark
                     <span className="text-muted-foreground">{total} trades</span>
                   </div>
                   <div className="flex h-2 rounded-full overflow-hidden bg-muted">
-                    <div className="bg-green-500" style={{ width: `${winPct}%` }} title={`Wins: ${winPct}%`} />
-                    <div className="bg-red-500" style={{ width: `${lossPct}%` }} title={`Losses: ${lossPct}%`} />
-                    <div className="bg-amber-500" style={{ width: `${ambPct}%` }} title={`Ambiguous: ${ambPct}%`} />
-                    <div className="bg-muted-foreground/30" style={{ width: `${eodPct}%` }} title={`EOD Close: ${eodPct}%`} />
+                    <div className="bg-green-500" style={{ width: `${probWinPct}%` }} title={`Prob. Win: ${probWinPct.toFixed(1)}%`} />
+                    <div className="bg-red-500" style={{ width: `${pureLossPct}%` }} title={`Pure Loss: ${pureLossPct.toFixed(1)}%`} />
+                    <div className="bg-amber-500" style={{ width: `${ambLossPct}%` }} title={`Amb. Loss: ${ambLossPct.toFixed(1)}%`} />
+                    <div className="bg-muted-foreground/30" style={{ width: `${eodPct}%` }} title={`EOD Close: ${eodPct.toFixed(1)}%`} />
                   </div>
-                  <div className="flex gap-3 text-[10px] text-muted-foreground">
-                    <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-green-500" />Win {winPct}%</span>
-                    <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-red-500" />Loss {lossPct}%</span>
-                    <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-amber-500" />Amb {ambPct}%</span>
-                    <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />EOD {eodPct}%</span>
+                  <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground">
+                    <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-green-500" />Prob. Win {probWinPct.toFixed(1)}%</span>
+                    <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-red-500" />Pure Loss {pureLossPct.toFixed(1)}%</span>
+                    <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-amber-500" />Amb. Loss {ambLossPct.toFixed(1)}%</span>
+                    {eodPct > 0 && <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />EOD {eodPct.toFixed(1)}%</span>}
                   </div>
                 </div>
               );
