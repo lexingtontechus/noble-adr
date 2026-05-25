@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import type { BacktestData } from './types';
 import { SectionDivider } from './chart-card';
 import { StreakAnalysis, CorrelationScatter, BootstrapConfidence, ProfitFactorCard } from './advanced-analytics';
+import { RiskAdjustedMetrics, TradeCalendarHeatmap, RunningMetricsTimeline } from './risk-metrics';
 
 // ====== ADVANCED ANALYTICS TAB ======
 
@@ -58,6 +59,21 @@ export function AnalyticsTab({ data, isDark = false }: {
 
       <SectionDivider isDark={isDark} />
 
+      {/* Risk-Adjusted Metrics */}
+      <RiskAdjustedMetrics data={data} isDark={isDark} />
+
+      <SectionDivider isDark={isDark} />
+
+      {/* Trade Calendar Heatmap */}
+      <TradeCalendarHeatmap data={data} isDark={isDark} />
+
+      <SectionDivider isDark={isDark} />
+
+      {/* Running Metrics Timeline */}
+      <RunningMetricsTimeline data={data} isDark={isDark} />
+
+      <SectionDivider isDark={isDark} />
+
       {/* Methodology Note */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -71,6 +87,9 @@ export function AnalyticsTab({ data, isDark = false }: {
           <p><span className="font-medium text-foreground">Correlation Analysis:</span> Uses Pearson correlation coefficient (r) to measure linear relationship between ADR₅ and trade P&amp;L. Simple linear regression provides a trendline.</p>
           <p><span className="font-medium text-foreground">Bootstrap CI:</span> Resampling with replacement from observed trade outcomes. 95% CI represents the range where the true win rate is expected to fall 95% of the time. P-value estimates P(WR ≥ 33.3%).</p>
           <p><span className="font-medium text-foreground">Profit Factor:</span> Ratio of gross profits to gross losses. Calculated using probability-weighted P&amp;L: Gross Profit = Σ(max(0, pnl) × win_prob), Gross Loss = Σ(|min(0, pnl)| × (1−win_prob)). PF &gt; 1.0 = profitable, PF &lt; 1.0 = losing strategy.</p>
+          <p><span className="font-medium text-foreground">Risk-Adjusted Metrics:</span> Sharpe Ratio uses (mean return − Rf) / σ of daily equity returns, annualized by √252. Sortino divides by downside deviation only. Calmar = annualized return / max drawdown. Risk-free rate = 5% annualized.</p>
+          <p><span className="font-medium text-foreground">Calendar Heatmap:</span> Probability-weighted P&amp;L aggregated by trade date. Cell intensity reflects magnitude relative to the max observed daily P&amp;L. Green = profitable, Red = losing, Gray = no trades.</p>
+          <p><span className="font-medium text-foreground">Rolling Timeline:</span> Sliding 50-trade window computing probability-weighted win rate and average P&amp;L (expectancy). Reference lines at 33.3% WR and 0 expectancy mark breakeven thresholds.</p>
         </div>
       </motion.div>
     </div>

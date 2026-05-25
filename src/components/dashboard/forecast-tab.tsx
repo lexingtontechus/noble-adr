@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   ArrowUpRight, ArrowDownRight, AlertTriangle, Info,
   Newspaper, Calculator
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import type { BacktestData, QuoteData, NewsData } from './types';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
@@ -217,6 +218,14 @@ export function ForecastTab({ data, quote, news, isDark = false }: { data: Backt
   const forecast = data.forecast;
   const refOpen = forecast.reference_open;
 
+  // Find the best level by win rate for pulse animation
+  const bestLevel = useMemo(() => {
+    if (forecast.forecast_details.length === 0) return null;
+    return forecast.forecast_details.reduce((best, fd) =>
+      fd.win_rate > best.win_rate ? fd : best
+    , forecast.forecast_details[0]);
+  }, [forecast.forecast_details]);
+
   return (
     <div className="space-y-6">
       {/* Market News */}
@@ -283,15 +292,34 @@ export function ForecastTab({ data, quote, news, isDark = false }: { data: Backt
           </div>
           {forecast.forecast_details.filter(f => f.direction === 'Long').map((fd) => {
             const distFromOpen = ((fd.price - refOpen) / refOpen * 100).toFixed(2);
+            const isBest = bestLevel && fd.level === bestLevel.level;
             return (
               <div key={fd.level} className="flex items-center gap-4 py-2">
                 <div className="flex-1 text-right">
-                  <div className="inline-flex items-center gap-2 rounded-lg border border-green-500/20 bg-green-500/5 px-3 py-2">
+                  <div className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 transition-all duration-300 ${isBest ? 'border-cyan-500/40 bg-cyan-500/10 ring-1 ring-cyan-500/20' : 'border-green-500/20 bg-green-500/5'}`}>
                     <ArrowUpRight className="h-3.5 w-3.5 text-green-500" />
-                    <div>
-                      <p className="text-xs font-medium text-green-500">{fd.level.replace('_', ' ')}</p>
+                    <div className="relative">
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs font-medium text-green-500">{fd.level.replace('_', ' ')}</p>
+                        {isBest && (
+                          <motion.span
+                            className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-500 border border-cyan-500/30"
+                            animate={{ scale: [1, 1.05, 1] }}
+                            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                          >
+                            BEST
+                          </motion.span>
+                        )}
+                      </div>
                       <p className="text-sm font-bold font-mono">{fd.price.toLocaleString()}</p>
                       <p className="text-[10px] text-muted-foreground">+{distFromOpen}% from open</p>
+                      {isBest && (
+                        <motion.div
+                          className="absolute -left-1 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-cyan-500"
+                          animate={{ scale: [1, 1.4, 1], opacity: [0.7, 1, 0.7] }}
+                          transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -306,6 +334,7 @@ export function ForecastTab({ data, quote, news, isDark = false }: { data: Backt
           })}
           {forecast.forecast_details.filter(f => f.direction === 'Short').map((fd) => {
             const distFromOpen = ((refOpen - fd.price) / refOpen * 100).toFixed(2);
+            const isBest = bestLevel && fd.level === bestLevel.level;
             return (
               <div key={fd.level} className="flex items-center gap-4 py-2">
                 <div className="flex-1" />
@@ -315,12 +344,30 @@ export function ForecastTab({ data, quote, news, isDark = false }: { data: Backt
                   <span className={`font-medium mt-0.5 ${fd.win_rate >= 33.3 ? 'text-green-500' : 'text-amber-500'}`}>WR: {fd.win_rate}%</span>
                 </div>
                 <div className="flex-1 text-left">
-                  <div className="inline-flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2">
+                  <div className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 transition-all duration-300 ${isBest ? 'border-cyan-500/40 bg-cyan-500/10 ring-1 ring-cyan-500/20' : 'border-red-500/20 bg-red-500/5'}`}>
                     <ArrowDownRight className="h-3.5 w-3.5 text-red-500" />
-                    <div>
-                      <p className="text-xs font-medium text-red-500">{fd.level.replace('_', ' ')}</p>
+                    <div className="relative">
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs font-medium text-red-500">{fd.level.replace('_', ' ')}</p>
+                        {isBest && (
+                          <motion.span
+                            className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-500 border border-cyan-500/30"
+                            animate={{ scale: [1, 1.05, 1] }}
+                            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                          >
+                            BEST
+                          </motion.span>
+                        )}
+                      </div>
                       <p className="text-sm font-bold font-mono">{fd.price.toLocaleString()}</p>
                       <p className="text-[10px] text-muted-foreground">-{distFromOpen}% from open</p>
+                      {isBest && (
+                        <motion.div
+                          className="absolute -right-1 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-cyan-500"
+                          animate={{ scale: [1, 1.4, 1], opacity: [0.7, 1, 0.7] }}
+                          transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                        />
+                      )}
                     </div>
                   </div>
                 </div>

@@ -68,3 +68,110 @@ export function SectionDivider({ isDark = false }: { isDark?: boolean } = {}) {
     />
   );
 }
+
+// ====== CUSTOM CHART TOOLTIP ======
+
+// Known data key to color mapping for tooltip colored dots
+const DATA_KEY_COLORS: Record<string, string> = {
+  winRate: '#06b6d4',
+  expectancy: '#8b5cf6',
+  kelly: '#f59e0b',
+  trades: '#22c55e',
+  longWR: '#22c55e',
+  shortWR: '#ef4444',
+  equity: '#ef4444',
+  drawdown: '#ef4444',
+  count: '#06b6d4',
+  avgPnl: '#f97316',
+};
+
+const DATA_KEY_LABELS: Record<string, string> = {
+  winRate: 'Win Rate',
+  expectancy: 'Expectancy',
+  kelly: 'Kelly %',
+  trades: 'Trades',
+  longWR: 'Long',
+  shortWR: 'Short',
+  equity: 'Equity',
+  drawdown: 'Drawdown',
+  count: 'Count',
+  avgPnl: 'Avg P&L',
+};
+
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    name: string;
+    value: number;
+    color?: string;
+    dataKey: string;
+  }>;
+  label?: string;
+  isDark?: boolean;
+  formatter?: (value: number, name: string) => [string, string];
+  labelFormatter?: (label: string) => string;
+}
+
+export function CustomChartTooltip({ active, payload, label, isDark = false, formatter, labelFormatter }: CustomTooltipProps) {
+  if (!active || !payload || payload.length === 0) return null;
+
+  const bgColor = isDark ? '#2a2a3e' : '#ffffff';
+  const borderColor = isDark ? '#3a3a4e' : '#e5e7eb';
+  const textColor = isDark ? '#e0e0e0' : '#1f2937';
+  const mutedColor = isDark ? '#999' : '#6b7280';
+
+  return (
+    <div
+      style={{
+        background: bgColor,
+        border: `1px solid ${borderColor}`,
+        borderRadius: '8px',
+        padding: '8px 12px',
+        fontSize: '12px',
+        color: textColor,
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+      }}
+    >
+      {label && (
+        <p style={{ margin: '0 0 4px 0', fontWeight: 600, fontSize: '11px', color: mutedColor }}>
+          {labelFormatter ? labelFormatter(label) : label}
+        </p>
+      )}
+      {payload.map((entry, i) => {
+        const dotColor = entry.color || DATA_KEY_COLORS[entry.dataKey] || '#06b6d4';
+        const displayName = DATA_KEY_LABELS[entry.dataKey] || entry.name;
+        const [formattedValue, formattedName] = formatter
+          ? formatter(entry.value, entry.dataKey)
+          : [String(entry.value), displayName];
+
+        return (
+          <div
+            key={i}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '2px 0',
+              borderLeft: `3px solid ${dotColor}`,
+              paddingLeft: '8px',
+              marginTop: i === 0 ? 0 : 2,
+            }}
+          >
+            <span
+              style={{
+                display: 'inline-block',
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                backgroundColor: dotColor,
+                flexShrink: 0,
+              }}
+            />
+            <span style={{ color: mutedColor, fontSize: '11px' }}>{formattedName || displayName}</span>
+            <span style={{ fontWeight: 600, marginLeft: 'auto', paddingLeft: '8px' }}>{formattedValue}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}

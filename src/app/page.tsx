@@ -4,12 +4,11 @@ import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import {
   TrendingUp, Target, AlertTriangle, BarChart3,
   Activity, Shield, Calendar, Info, DollarSign,
-  Sun, Moon, Copy, Check, Microscope
+  Sun, Moon, Copy, Check, Microscope, Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import type { BacktestData, QuoteData, NewsData, TabId } from '@/components/dashboard/types';
-import { tabVariants } from '@/components/dashboard/constants';
 import { useCountUp } from '@/components/dashboard/hooks';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { OverviewTab } from '@/components/dashboard/overview-tab';
@@ -18,6 +17,17 @@ import { VariationsTab } from '@/components/dashboard/variations-tab';
 import { ForecastTab } from '@/components/dashboard/forecast-tab';
 import { MethodologyTab } from '@/components/dashboard/methodology-tab';
 import { AnalyticsTab } from '@/components/dashboard/advanced-tab';
+
+// ====== STAGGER CHILD COMPONENT ======
+
+const staggerChildVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' as const } },
+};
+
+function StaggerChild({ children }: { children: React.ReactNode }) {
+  return <motion.div variants={staggerChildVariants}>{children}</motion.div>;
+}
 
 // ====== MAIN HOME COMPONENT ======
 
@@ -29,6 +39,7 @@ export default function Home() {
   const [news, setNews] = useState<NewsData | null>(null);
   const [isDark, setIsDark] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [sessionSeconds, setSessionSeconds] = useState(0);
   const mainRef = useRef<HTMLDivElement>(null);
 
   // Animated counter values for stat cards
@@ -68,6 +79,14 @@ export default function Home() {
     } catch {
       // silently fail
     }
+  }, []);
+
+  // Session timer
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSessionSeconds(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
   }, []);
 
   // Dark mode effect
@@ -292,6 +311,11 @@ export default function Home() {
           50% { background-position: 100% 50%; }
           100% { background-position: 0% 50%; }
         }
+        @keyframes footerGradient {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
         /* Custom scrollbar styling */
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
@@ -337,7 +361,12 @@ export default function Home() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {/* Live Price Indicator */}
+              {/* Session Timer */}
+              <div className="flex items-center gap-1 text-xs text-muted-foreground font-mono">
+                <Clock className="h-3 w-3" />
+                <span>Session: {Math.floor(sessionSeconds / 60)}m {sessionSeconds % 60}s</span>
+              </div>
+
               {quote && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
@@ -492,11 +521,21 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Tab Content with Animations */}
+        {/* Tab Content with Staggered Animations */}
         <AnimatePresence mode="wait">
           {activeTab === 'overview' && (
-            <motion.div key="overview" variants={tabVariants} initial="hidden" animate="visible" exit="exit">
-              <OverviewTab
+            <motion.div
+              key="overview"
+              variants={{
+                hidden: { opacity: 0 },
+                visible: { opacity: 1, transition: { staggerChildren: 0.05, delayChildren: 0.1 } },
+                exit: { opacity: 0, y: -8, transition: { duration: 0.15, ease: 'easeIn' as const } },
+              }}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+            >
+              <StaggerChild><OverviewTab
                 data={data}
                 levelChartData={levelChartData}
                 quarterChartData={quarterChartData}
@@ -506,39 +545,99 @@ export default function Home() {
                 adrDistributionData={adrDistributionData}
                 currentAdr5={currentAdr5}
                 isDark={isDark}
-              />
+              /></StaggerChild>
             </motion.div>
           )}
           {activeTab === 'levels' && (
-            <motion.div key="levels" variants={tabVariants} initial="hidden" animate="visible" exit="exit">
-              <LevelsTab data={data} isDark={isDark} />
+            <motion.div
+              key="levels"
+              variants={{
+                hidden: { opacity: 0 },
+                visible: { opacity: 1, transition: { staggerChildren: 0.05, delayChildren: 0.1 } },
+                exit: { opacity: 0, y: -8, transition: { duration: 0.15, ease: 'easeIn' as const } },
+              }}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+            >
+              <StaggerChild><LevelsTab data={data} isDark={isDark} /></StaggerChild>
             </motion.div>
           )}
           {activeTab === 'variations' && (
-            <motion.div key="variations" variants={tabVariants} initial="hidden" animate="visible" exit="exit">
-              <VariationsTab data={data} isDark={isDark} />
+            <motion.div
+              key="variations"
+              variants={{
+                hidden: { opacity: 0 },
+                visible: { opacity: 1, transition: { staggerChildren: 0.05, delayChildren: 0.1 } },
+                exit: { opacity: 0, y: -8, transition: { duration: 0.15, ease: 'easeIn' as const } },
+              }}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+            >
+              <StaggerChild><VariationsTab data={data} isDark={isDark} /></StaggerChild>
             </motion.div>
           )}
           {activeTab === 'forecast' && (
-            <motion.div key="forecast" variants={tabVariants} initial="hidden" animate="visible" exit="exit">
-              <ForecastTab data={data} quote={quote} news={news} isDark={isDark} />
+            <motion.div
+              key="forecast"
+              variants={{
+                hidden: { opacity: 0 },
+                visible: { opacity: 1, transition: { staggerChildren: 0.05, delayChildren: 0.1 } },
+                exit: { opacity: 0, y: -8, transition: { duration: 0.15, ease: 'easeIn' as const } },
+              }}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+            >
+              <StaggerChild><ForecastTab data={data} quote={quote} news={news} isDark={isDark} /></StaggerChild>
             </motion.div>
           )}
           {activeTab === 'methodology' && (
-            <motion.div key="methodology" variants={tabVariants} initial="hidden" animate="visible" exit="exit">
-              <MethodologyTab data={data} isDark={isDark} />
+            <motion.div
+              key="methodology"
+              variants={{
+                hidden: { opacity: 0 },
+                visible: { opacity: 1, transition: { staggerChildren: 0.05, delayChildren: 0.1 } },
+                exit: { opacity: 0, y: -8, transition: { duration: 0.15, ease: 'easeIn' as const } },
+              }}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+            >
+              <StaggerChild><MethodologyTab data={data} isDark={isDark} /></StaggerChild>
             </motion.div>
           )}
           {activeTab === 'analytics' && (
-            <motion.div key="analytics" variants={tabVariants} initial="hidden" animate="visible" exit="exit">
-              <AnalyticsTab data={data} isDark={isDark} />
+            <motion.div
+              key="analytics"
+              variants={{
+                hidden: { opacity: 0 },
+                visible: { opacity: 1, transition: { staggerChildren: 0.05, delayChildren: 0.1 } },
+                exit: { opacity: 0, y: -8, transition: { duration: 0.15, ease: 'easeIn' as const } },
+              }}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+            >
+              <StaggerChild><AnalyticsTab data={data} isDark={isDark} /></StaggerChild>
             </motion.div>
           )}
         </AnimatePresence>
       </main>
 
       {/* Footer */}
-      <footer className={`border-t mt-auto relative z-10 ${isDark ? 'border-white/10 bg-white/[0.02]' : 'border-border bg-card/50'}`}>
+      <footer className={`mt-auto relative z-10 ${isDark ? 'border-white/10 bg-white/[0.02]' : 'border-border bg-card/50'}`}>
+        {/* Animated gradient border at top of footer */}
+        <div
+          className="h-px w-full"
+          style={{
+            background: 'linear-gradient(90deg, transparent, hsl(var(--muted-foreground) / 0.2), transparent, hsl(var(--muted-foreground) / 0.15), transparent)',
+            backgroundSize: '200% 100%',
+            animation: 'footerGradient 8s ease infinite',
+          }}
+        />
+        <div className="border-t border-border" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">

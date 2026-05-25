@@ -11,7 +11,7 @@ import {
 } from 'recharts';
 import type { BacktestData, VariationResult } from './types';
 import { COLORS, LIGHT_CHART_COLORS, DARK_CHART_COLORS } from './constants';
-import { ChartCard } from './chart-card';
+import { ChartCard, CustomChartTooltip } from './chart-card';
 import { Slider } from '@/components/ui/slider';
 import { MonteCarloSimulation } from './monte-carlo';
 
@@ -223,7 +223,7 @@ function RadarComparisonChart({ variations, isDark = false }: { variations: Vari
             ))}
             <Legend wrapperStyle={{ fontSize: '11px' }} />
             <RechartsTooltip
-              contentStyle={{ background: cc.tooltipBg, border: `1px solid ${cc.tooltipBorder}`, borderRadius: '8px', fontSize: '12px', color: isDark ? '#e0e0e0' : undefined }}
+              content={<CustomChartTooltip isDark={isDark} />}
             />
           </RadarChart>
         </ResponsiveContainer>

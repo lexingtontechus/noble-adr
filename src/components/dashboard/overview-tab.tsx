@@ -12,7 +12,7 @@ import {
 import { motion } from 'framer-motion';
 import type { BacktestData, EquityPoint, DrawdownInfo } from './types';
 import { COLORS, LIGHT_CHART_COLORS, DARK_CHART_COLORS } from './constants';
-import { ChartCard, SectionDivider } from './chart-card';
+import { ChartCard, SectionDivider, CustomChartTooltip } from './chart-card';
 
 // ====== PERFORMANCE SCORE CARD ======
 
@@ -273,15 +273,13 @@ function DayOfWeekChart({ data, isDark = false }: { data: BacktestData; isDark?:
             <XAxis dataKey="day" tick={{ fontSize: 11 }} stroke={cc.text} />
             <YAxis tick={{ fontSize: 10 }} stroke={cc.text} domain={[0, 50]} />
             <RechartsTooltip
-              contentStyle={{ background: cc.tooltipBg, border: `1px solid ${cc.tooltipBorder}`, borderRadius: '8px', fontSize: '12px', color: isDark ? '#e0e0e0' : undefined }}
-              formatter={(value: number, name: string) => {
+              content={<CustomChartTooltip isDark={isDark} formatter={(value: number, name: string) => {
                 if (name === 'winRate') return [`${value}%`, 'Win Rate'];
-                return [value, name];
-              }}
-              labelFormatter={(label: string) => {
+                return [String(value), name];
+              }} labelFormatter={(label: string) => {
                 const item = dayOfWeekData.find(d => d.day === label);
                 return item ? `${label} (${item.trades} trades)` : label;
-              }}
+              }} />}
             />
             <ReferenceLine y={33.3} stroke="#ef4444" strokeDasharray="5 5" label={{ value: 'Breakeven 33.3%', position: 'right', fontSize: 10, fill: '#ef4444' }} />
             <Bar dataKey="winRate" radius={[4, 4, 0, 0]}>
@@ -340,8 +338,7 @@ function TimeOfMonthChart({ data, isDark = false }: { data: BacktestData; isDark
             <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke={cc.text} />
             <YAxis tick={{ fontSize: 10 }} stroke={cc.text} domain={[0, 50]} />
             <RechartsTooltip
-              contentStyle={{ background: cc.tooltipBg, border: `1px solid ${cc.tooltipBorder}`, borderRadius: '8px', fontSize: '12px', color: isDark ? '#e0e0e0' : undefined }}
-              formatter={(value: number, name: string) => [name === 'winRate' ? `${value}%` : value, name === 'winRate' ? 'Win Rate' : 'Trades']}
+              content={<CustomChartTooltip isDark={isDark} formatter={(value: number, name: string) => [name === 'winRate' ? `${value}%` : String(value), name === 'winRate' ? 'Win Rate' : 'Trades']} />}
             />
             <ReferenceLine y={33.3} stroke="#ef4444" strokeDasharray="5 5" label={{ value: '33.3%', position: 'right', fontSize: 9, fill: '#ef4444' }} />
             <Bar dataKey="winRate" name="winRate" radius={[4, 4, 0, 0]}>
@@ -389,8 +386,7 @@ export function OverviewTab({ data, levelChartData, quarterChartData, monthlyCha
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} stroke={cc.text} />
                 <YAxis tick={{ fontSize: 10 }} stroke={cc.text} domain={[0, 40]} />
                 <RechartsTooltip
-                  contentStyle={{ background: cc.tooltipBg, border: `1px solid ${cc.tooltipBorder}`, borderRadius: '8px', fontSize: '12px', color: isDark ? '#e0e0e0' : undefined }}
-                  formatter={(value: number) => [`${value}%`, 'Win Rate']}
+                  content={<CustomChartTooltip isDark={isDark} formatter={(value: number) => [`${value}%`, 'Win Rate']} />}
                 />
                 <ReferenceLine y={33.3} stroke="#ef4444" strokeDasharray="5 5" label={{ value: 'Breakeven 33.3%', position: 'right', fontSize: 10, fill: '#ef4444' }} />
                 <Bar dataKey="winRate" radius={[4, 4, 0, 0]}>
@@ -411,8 +407,7 @@ export function OverviewTab({ data, levelChartData, quarterChartData, monthlyCha
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} stroke={cc.text} />
                 <YAxis tick={{ fontSize: 10 }} stroke={cc.text} />
                 <RechartsTooltip
-                  contentStyle={{ background: cc.tooltipBg, border: `1px solid ${cc.tooltipBorder}`, borderRadius: '8px', fontSize: '12px', color: isDark ? '#e0e0e0' : undefined }}
-                  formatter={(value: number) => [`${value > 0 ? '+' : ''}${value.toFixed(4)}`, 'Expectancy']}
+                  content={<CustomChartTooltip isDark={isDark} formatter={(value: number) => [`${value > 0 ? '+' : ''}${value.toFixed(4)}`, 'Expectancy']} />}
                 />
                 <ReferenceLine y={0} stroke="#f59e0b" strokeDasharray="3 3" />
                 <Bar dataKey="expectancy" radius={[4, 4, 0, 0]}>
@@ -436,7 +431,7 @@ export function OverviewTab({ data, levelChartData, quarterChartData, monthlyCha
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke={cc.text} />
                 <YAxis tick={{ fontSize: 10 }} stroke={cc.text} domain={[0, 35]} />
                 <RechartsTooltip
-                  contentStyle={{ background: cc.tooltipBg, border: `1px solid ${cc.tooltipBorder}`, borderRadius: '8px', fontSize: '12px', color: isDark ? '#e0e0e0' : undefined }}
+                  content={<CustomChartTooltip isDark={isDark} />}
                 />
                 <ReferenceLine y={33.3} stroke="#ef4444" strokeDasharray="5 5" />
                 <Bar dataKey="longWR" name="Long" fill={COLORS.up} radius={[3, 3, 0, 0]} fillOpacity={0.8} />
@@ -455,11 +450,10 @@ export function OverviewTab({ data, levelChartData, quarterChartData, monthlyCha
                 <XAxis dataKey="name" tick={{ fontSize: 9 }} stroke={cc.text} interval={1} />
                 <YAxis tick={{ fontSize: 10 }} stroke={cc.text} domain={[0, 50]} />
                 <RechartsTooltip
-                  contentStyle={{ background: cc.tooltipBg, border: `1px solid ${cc.tooltipBorder}`, borderRadius: '8px', fontSize: '12px', color: isDark ? '#e0e0e0' : undefined }}
-                  labelFormatter={(label: string) => {
+                  content={<CustomChartTooltip isDark={isDark} labelFormatter={(label: string) => {
                     const item = monthlyChartData.find(m => m.name === label);
                     return item?.full || label;
-                  }}
+                  }} />}
                 />
                 <ReferenceLine y={33.3} stroke="#ef4444" strokeDasharray="5 5" label={{ value: '33.3%', position: 'right', fontSize: 9, fill: '#ef4444' }} />
                 <Area type="monotone" dataKey="winRate" stroke={COLORS.chart1} fill={COLORS.chart1} fillOpacity={0.1} strokeWidth={2} name="Win Rate %" />
@@ -495,8 +489,7 @@ export function OverviewTab({ data, levelChartData, quarterChartData, monthlyCha
               <XAxis dataKey="date" tick={{ fontSize: 9 }} stroke={cc.text} interval={Math.floor(equitySampled.length / 6)} />
               <YAxis tick={{ fontSize: 9 }} stroke={cc.text} domain={[0, 12000]} />
               <RechartsTooltip
-                contentStyle={{ background: cc.tooltipBg, border: `1px solid ${cc.tooltipBorder}`, borderRadius: '8px', fontSize: '12px', color: isDark ? '#e0e0e0' : undefined }}
-                formatter={(value: number) => [`$${value.toLocaleString()}`, 'Equity']}
+                content={<CustomChartTooltip isDark={isDark} formatter={(value: number) => [`$${value.toLocaleString()}`, 'Equity']} />}
               />
               <ReferenceLine y={10000} stroke="#f59e0b" strokeDasharray="5 5" label={{ value: 'Start: $10K', position: 'right', fontSize: 9, fill: '#f59e0b' }} />
               <Area type="monotone" dataKey="equity" stroke={COLORS.negative} fill={COLORS.negative} fillOpacity={0.05} strokeWidth={1.5} />
@@ -562,8 +555,7 @@ export function OverviewTab({ data, levelChartData, quarterChartData, monthlyCha
               <XAxis dataKey="date" tick={{ fontSize: 8 }} stroke={cc.text} interval={Math.floor(drawdownData.drawdownCurve.length / 6)} />
               <YAxis tick={{ fontSize: 9 }} stroke={cc.text} />
               <RechartsTooltip
-                contentStyle={{ background: cc.tooltipBg, border: `1px solid ${cc.tooltipBorder}`, borderRadius: '8px', fontSize: '12px', color: isDark ? '#e0e0e0' : undefined }}
-                formatter={(value: number) => [`${Math.abs(value).toFixed(1)}%`, 'Drawdown']}
+                content={<CustomChartTooltip isDark={isDark} formatter={(value: number) => [`${Math.abs(value).toFixed(1)}%`, 'Drawdown']} />}
               />
               <ReferenceLine y={0} stroke={cc.text} strokeDasharray="2 2" />
               <Area type="monotone" dataKey="drawdown" stroke="#ef4444" fill="#ef4444" fillOpacity={0.15} strokeWidth={1.5} />
@@ -583,9 +575,7 @@ export function OverviewTab({ data, levelChartData, quarterChartData, monthlyCha
               <XAxis dataKey="range" tick={{ fontSize: 9 }} stroke={cc.text} />
               <YAxis tick={{ fontSize: 10 }} stroke={cc.text} />
               <RechartsTooltip
-                contentStyle={{ background: cc.tooltipBg, border: `1px solid ${cc.tooltipBorder}`, borderRadius: '8px', fontSize: '12px', color: isDark ? '#e0e0e0' : undefined }}
-                formatter={(value: number) => [`${value} trades`, 'Count']}
-                labelFormatter={(label: string) => `ADR: ${label} pts`}
+                content={<CustomChartTooltip isDark={isDark} formatter={(value: number) => [`${value} trades`, 'Count']} labelFormatter={(label: string) => `ADR: ${label} pts`} />}
               />
               {currentAdr5 > 0 && (
                 <ReferenceLine

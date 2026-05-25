@@ -8,6 +8,7 @@ import {
   ResponsiveContainer, ReferenceLine, Cell, AreaChart, Area
 } from 'recharts';
 import { COLORS, LIGHT_CHART_COLORS, DARK_CHART_COLORS } from './constants';
+import { CustomChartTooltip } from './chart-card';
 import type { BacktestData } from './types';
 
 // Simple seeded PRNG for reproducibility
@@ -180,8 +181,7 @@ export function MonteCarloSimulation({ data, isDark = false }: { data: BacktestD
               <XAxis dataKey="range" tick={{ fontSize: 8 }} stroke={cc.text} interval={2} />
               <YAxis tick={{ fontSize: 9 }} stroke={cc.text} />
               <RechartsTooltip
-                contentStyle={{ background: cc.tooltipBg, border: `1px solid ${cc.tooltipBorder}`, borderRadius: '8px', fontSize: '11px', color: isDark ? '#e0e0e0' : undefined }}
-                formatter={(value: number) => [`${value} sims`, 'Count']}
+                content={<CustomChartTooltip isDark={isDark} formatter={(value: number) => [`${value} sims`, 'Count']} />}
               />
               <ReferenceLine x={simResults.buckets.findIndex(b => b.midpoint <= simResults.startingEquity && b.midpoint + (simResults.buckets[1]?.midpoint - simResults.buckets[0]?.midpoint) > simResults.startingEquity)} stroke="#f59e0b" strokeDasharray="3 3" />
               <Bar dataKey="count" radius={[2, 2, 0, 0]}>

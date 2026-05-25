@@ -185,7 +185,10 @@ export function LevelsTab({ data, isDark = false }: { data: BacktestData; isDark
                 const borderColor = level.quarter === 'Q1' ? '#f59e0b' : level.quarter === 'Q2' ? '#ef4444' : level.quarter === 'Q3' ? '#dc2626' : '#991b1b';
                 const bgOpacity = level.quarter === 'Q1' ? '0.03' : level.quarter === 'Q2' ? '0.02' : '0.01';
                 return (
-                <tr key={level.level} className={`border-b border-border last:border-0 ${i % 2 === 0 ? '' : 'bg-muted/10'}`} style={{ borderLeft: `3px solid ${borderColor}`, backgroundColor: `rgba(${level.quarter === 'Q1' ? '245,158,11' : level.quarter === 'Q2' ? '239,68,68' : level.quarter === 'Q3' ? '220,38,38' : '153,27,27'},${bgOpacity})` }}>
+                <tr key={level.level} className={`border-b border-border last:border-0 hover:bg-muted/50 transition-all duration-200 cursor-default ${i % 2 === 0 ? '' : 'bg-muted/10'}`} style={{ borderLeft: `3px solid ${borderColor}`, backgroundColor: `rgba(${level.quarter === 'Q1' ? '245,158,11' : level.quarter === 'Q2' ? '239,68,68' : level.quarter === 'Q3' ? '220,38,38' : '153,27,27'},${bgOpacity})` }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderLeftWidth = '5px'; e.currentTarget.style.borderLeftColor = 'rgba(6,182,212,0.5)'; e.currentTarget.style.transform = 'scale(1.002)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderLeftWidth = '3px'; e.currentTarget.style.borderLeftColor = borderColor; e.currentTarget.style.transform = 'scale(1)'; }}
+                >
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <div className="h-2 w-2 rounded-full" style={{ backgroundColor: QUARTER_COLORS[level.quarter] || COLORS.neutral }} />

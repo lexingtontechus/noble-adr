@@ -738,3 +738,228 @@ Stage Summary:
 2. Add PDF/CSV export for full backtest report
 3. Add comparison with other indices (SPX, NDX)
 4. Implement server-side backtest computation (parameter changes from UI)
+
+---
+Task ID: 4
+Agent: feature-dev
+Task: Add RiskAdjustedMetrics, TradeCalendarHeatmap, RunningMetricsTimeline to Analytics tab
+
+Work Log:
+- Read all required files: types.ts, constants.ts, chart-card.tsx, advanced-tab.tsx, advanced-analytics.tsx, backtest_results.json, worklog.md
+- Created /home/z/my-project/src/components/dashboard/risk-metrics.tsx (602 lines) with 3 new components:
+  1. RiskAdjustedMetrics:
+     - Calculates Sharpe Ratio from daily equity returns: (mean_return - risk_free_rate) / std_dev, annualized by √252
+     - Calculates Sortino Ratio: (mean_return - risk_free_rate) / downside_deviation (only negative returns)
+     - Calculates Calmar Ratio: annualized_return / max_drawdown
+     - Risk-free rate = 5% annualized (0.05/252 daily)
+     - 3 stat cards with motion.div hover effects (scale 1.02, y -2)
+     - Color-coded: green > 1, amber 0-1, red < 0
+     - Each card shows: metric name, value, interpretation text, formula
+     - Methodology note section explaining each ratio
+  2. TradeCalendarHeatmap:
+     - Calendar-style heatmap showing last 12 weeks of trading activity
+     - Aggregates trades by date with probability-weighted P&L (pnl_pct * win_prob)
+     - Green cells for profitable days, red for losing, gray for no trades
+     - Intensity based on P&L magnitude relative to max observed
+     - Grid: 7 columns (Mon-Sun), 12 rows (weeks)
+     - Hover tooltip showing date, trade count, net P&L
+     - Cyan border on today's cell
+     - Legend with Profitable/Losing/No Trades/Today indicators
+     - Intensity gradient legend (less → more)
+  3. RunningMetricsTimeline:
+     - Dual-axis LineChart showing rolling 50-trade metrics over time
+     - Left Y-axis: Rolling Win Rate (%) with probability-weighted calculation
+     - Right Y-axis: Rolling Expectancy (quarters)
+     - X-axis: Trade number
+     - Reference line at 33.3% WR (breakeven) with amber dashed line
+     - Reference line at 0 expectancy (breakeven) with dashed line
+     - Falls back to smaller window if fewer than 50 trades
+     - Interpretation cards for each metric below chart
+- Updated /home/z/my-project/src/components/dashboard/advanced-tab.tsx:
+  - Added import for RiskAdjustedMetrics, TradeCalendarHeatmap, RunningMetricsTimeline from './risk-metrics'
+  - Added 3 new sections after BootstrapConfidence, before Methodology Notes
+  - Added SectionDivider between each new section
+  - Added 3 methodology notes for the new components in the Statistical Methodology Notes section
+- Removed unused `overall` variable and `Calendar` import from risk-metrics.tsx
+- All lint checks pass with zero errors
+- Dev server compiles successfully, all API routes returning 200
+
+Stage Summary:
+- Created risk-metrics.tsx with 3 new components (RiskAdjustedMetrics, TradeCalendarHeatmap, RunningMetricsTimeline)
+- Updated advanced-tab.tsx to integrate all 3 components
+- All calculations use useMemo for performance
+- Consistent glassmorphism pattern with isDark prop
+- Named exports only as required
+- Lint passes, dev server stable
+
+---
+Task ID: 3
+Agent: styling-enhancement-agent
+Task: Styling Enhancement - ADR Quarter Breakout Dashboard
+
+Work Log:
+- Read worklog.md for prior project history (Tasks 10-22)
+- Read all 5 target files to understand current styling
+- Implemented 6 styling improvements:
+
+A. Enhanced Header with Live Clock and Session Timer (page.tsx):
+  - Added Clock icon import from lucide-react
+  - Added sessionSeconds state with useEffect/setInterval updating every second
+  - Displayed "Session: 5m 23s" in header near price indicator
+  - Styled: text-xs text-muted-foreground font-mono with Clock icon
+
+B. Data Table Row Hover Highlighting (levels-tab.tsx):
+  - Added hover:bg-muted/50 transition-all duration-200 cursor-default to each table row
+  - Added onMouseEnter/onMouseLeave handlers for dynamic border-left animation
+  - On hover: border-left widens from 3px to 5px, color changes to rgba(6,182,212,0.5) (cyan)
+  - On hover: row scales to 1.002 (very subtle)
+  - On leave: restores original border-left width/color and scale
+
+C. Chart Tooltip Enhancement (overview-tab.tsx, variations-tab.tsx, monte-carlo.tsx):
+  - Created CustomChartTooltip component in chart-card.tsx
+  - Custom tooltip shows colored dot (6px circle) before each metric name
+  - Adds 3px border-left matching the data color on each tooltip item
+  - Maps data keys to human-readable labels (winRate → "Win Rate", etc.)
+  - Maps data keys to appropriate colors for visual distinction
+  - Replaced all 10 RechartsTooltip contentStyle instances with content={<CustomChartTooltip />}
+  - Supports isDark prop for dark mode tooltip backgrounds
+  - Supports formatter and labelFormatter props for custom formatting
+  - Also updated monte-carlo.tsx for consistency
+
+D. Footer Enhancement with Animated Border (page.tsx):
+  - Added 1px gradient line at top of footer
+  - Uses muted-foreground/20 opacity colors (very subtle)
+  - Animated with footerGradient keyframe at 8s (slower than header's 3s)
+  - Added @keyframes footerGradient in style tag
+  - Added border-t border-border below the gradient line for structural separation
+
+E. Tab Content Fade-in with Staggered Children (page.tsx):
+  - Created StaggerChild component with staggerChildVariants
+  - Each tab content wrapped in motion.div with staggerChildren: 0.05, delayChildren: 0.1
+  - StaggerChild uses variants: hidden={opacity:0, y:12} → visible={opacity:1, y:0}
+  - Replaced tabVariants usage with inline stagger variants
+  - Removed tabVariants import from page.tsx (no longer needed there)
+  - Creates polished "content loading" feel when switching tabs
+
+F. Forecast Tab Level Map Enhancement (forecast-tab.tsx):
+  - Added motion import from framer-motion
+  - Added useMemo to compute bestLevel (highest win_rate among forecast_details)
+  - Best level gets special styling: border-cyan-500/40, bg-cyan-500/10, ring-1 ring-cyan-500/20
+  - Added "BEST" badge using motion.span with animate={{ scale: [1, 1.05, 1] }}
+  - BEST badge pulses with 2s infinite easeInOut animation
+  - Added pulse dot (h-2 w-2 bg-cyan-500) with animate={{ scale: [1, 1.4, 1], opacity: [0.7, 1, 0.7] }}
+  - Applied to both Long and Short direction levels in visual map
+
+- All lint checks pass with zero errors
+- Dev server compiles and serves correctly
+- All existing functionality preserved (5 tabs, 3 API routes, dark mode, etc.)
+- No new npm packages added
+
+Stage Summary:
+- All 6 styling improvements implemented successfully
+- Custom tooltip component shared via chart-card.tsx (reused in 3 files)
+- Session timer adds live interactivity to header
+- Table row hover effects make level analysis more engaging
+- Staggered animations create polished tab switching experience
+- Best level pulse in forecast draws attention to highest-conviction setup
+- Footer animated gradient adds subtle visual polish
+- Lint passes with zero errors, dev server stable
+
+---
+Task ID: 24
+Agent: Main (QA + Feature Development + Styling Round 7)
+Task: QA testing, risk-adjusted metrics, trade calendar heatmap, rolling metrics timeline, styling improvements
+
+Work Log:
+- Reviewed worklog.md for all prior project progress (Tasks 10-23)
+- Performed QA testing via agent-browser across all 6 tabs - no active bugs found
+- Verified previous bug fixes still in place: Prob. Win in Level Analysis, DayOfWeek chart showing real values
+- All 3 API endpoints returning 200, dev server stable, zero console errors on fresh load
+- Created 3 new analytics components in risk-metrics.tsx (602 lines):
+  A. RiskAdjustedMetrics: Sharpe Ratio, Sortino Ratio, Calmar Ratio with 3 stat cards
+     - Sharpe: (mean_return - risk_free) / std_dev, annualized by sqrt(252)
+     - Sortino: same numerator / downside deviation (only negative returns)
+     - Calmar: annualized return / max drawdown
+     - Risk-free rate: 5% annualized (0.05/252 daily)
+     - Color-coded: green (>1), amber (0-1), red (<0)
+     - Methodology note explaining each ratio
+  B. TradeCalendarHeatmap: Calendar-style heatmap for last 12 weeks
+     - Aggregates trades by date with probability-weighted P&L
+     - Green cells = profitable days, Red = losing days, Gray = no trades
+     - Cell intensity scales with P&L magnitude
+     - 7-column grid (Mon-Sun), 12 rows (weeks) with week labels
+     - Hover tooltip with date, trade count, net P&L
+     - Cyan border highlights today's date
+  C. RunningMetricsTimeline: Dual-axis LineChart with rolling window
+     - Left Y-axis: Rolling Win Rate (%) - probability-weighted
+     - Right Y-axis: Rolling Expectancy (average P&L per trade)
+     - Reference lines at 33.3% WR and 0 expectancy
+     - Falls back to smaller window if < 50 trades
+     - Interpretation cards below chart
+- Updated advanced-tab.tsx to import and render 3 new components
+- Added 3 new methodology notes for the new components
+- Implemented 6 styling improvements:
+  A. Session Timer in Header: Live elapsed time "Session: 5m 23s" with Clock icon, font-mono
+  B. Table Row Hover Highlighting: hover:bg-muted/50, dynamic border-left 3px→5px with cyan color, subtle scale(1.002)
+  C. Custom Chart Tooltips: Created CustomChartTooltip component with colored dots before metric names, 3px color-matched border-left per item, human-readable label mapping. Replaced 10+ instances across overview-tab, variations-tab, monte-carlo
+  D. Footer Animated Border: 1px gradient line at top of footer, 8s animation (subtle vs header's 3s), muted-foreground/20 colors
+  E. Staggered Tab Content Animations: StaggerChild component with fade-in + slide-up, staggerChildren: 0.05, delayChildren: 0.1 for polished content loading feel
+  F. Forecast Level Map Enhancement: Best level gets cyan highlight ring, animated "BEST" badge with motion.span pulse [1, 1.05, 1], pulsing dot indicator
+- All lint checks pass with zero errors
+- Dev server stable, all features working
+
+Stage Summary:
+- Dashboard now has 6 tabs with 17+ component files
+- Analytics tab contains 7 sub-components: Profit Factor, Streak Analysis, Correlation Scatter, Bootstrap CI, Risk-Adjusted Metrics, Trade Calendar Heatmap, Rolling Metrics Timeline
+- 6 styling improvements: session timer, table hover, custom tooltips, footer border, staggered animations, BEST badge
+- No bugs, lint passes, dev server stable
+
+## === CURRENT PROJECT STATUS (Round 7) ===
+
+### Project: US30 ADR Quarter Breakout Strategy Dashboard
+### Status: Production-Ready, Feature-Rich (Round 7)
+
+### Architecture:
+- Frontend: Next.js 16 + TypeScript + Tailwind CSS 4 + shadcn/ui + Recharts + framer-motion
+- Backend: 3 API routes (/api/backtest, /api/quote, /api/news)
+- Data: 2 years of US30 daily OHLC data (499 trading days, 1452 trades)
+- Main File: src/app/page.tsx (~600 lines)
+- Components: src/components/dashboard/ (16+ files)
+
+### Features (6 tabs):
+1. **Overview**: Strategy Score + Volatility Regime + 10 charts + animated stat cards with sparklines/gradient text
+2. **Level Analysis**: Color-coded breakdown table + Signal Strength + Confluence Heat Map + Probability-weighted Outcome Composition + Trade Log
+3. **Strategy Variations**: 4 variation cards + R:R Optimizer + Monte Carlo + Radar Comparison
+4. **Weekly Forecast**: Market News + Risk Warning + Visual Level Map (with BEST badge) + Forecast Table + Trade Simulator
+5. **Methodology**: 5-step walkthrough with visual diagrams
+6. **Analytics**: Profit Factor + Streak Analysis + Correlation Scatter + Bootstrap CI + Risk-Adjusted Metrics (Sharpe/Sortino/Calmar) + Trade Calendar Heatmap + Rolling Metrics Timeline
+
+### Styling Features:
+- Session timer in header with live elapsed time
+- Custom chart tooltips with colored dots and border-left
+- Table row hover highlighting with animated border
+- Staggered tab content animations (fade-in + slide-up)
+- Footer animated gradient border (8s cycle)
+- Forecast BEST badge with pulse animation
+- Mini sparklines on stat cards
+- Gradient text on stat values
+- ChartCard entrance animations
+- Glassmorphism dark mode effects
+- Pill-style tab navigation
+- Animated gradient line at page top
+- Decorative background gradient orbs
+- Custom scrollbar styling
+
+### Unresolved Issues / Risks:
+- Finance API subscription may not be active (fallback data used)
+- Backtest shows NO positive edge (22.1% WR vs 33.3% breakeven)
+- Analytics data limited to recent_trades (30 trades) for some components
+- Risk-adjusted metrics rely on equity curve from full backtest
+
+### Priority Recommendations for Next Phase:
+1. Expand analytics to use full trade dataset (beyond recent 30)
+2. Add PDF/CSV export for full backtest report
+3. Add comparison with other indices (SPX, NDX)
+4. Implement server-side backtest computation (parameter changes from UI)
+5. Add automated alerts when volatility regime changes
+6. Add intraday data integration for accurate path resolution
