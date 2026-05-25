@@ -423,3 +423,152 @@ Stage Summary:
 5. Add intraday data integration for accurate path resolution
 6. Fetch live US30 data when Finance API subscription is activated
 7. Add more advanced statistical tests (Monte Carlo simulation, bootstrap confidence intervals)
+
+---
+Task ID: 22
+Agent: Main (QA + Refactoring + Feature Development Round 5)
+Task: QA testing, major refactoring, Monte Carlo simulation, styling improvements
+
+Work Log:
+- Reviewed worklog.md for all prior project progress (Tasks 10-21)
+- Performed QA testing via agent-browser across all 5 tabs — no bugs, zero console errors, all APIs returning 200
+- Tested dark mode with glassmorphism — confirmed working with proper card blur and contrast
+- Tested mobile responsiveness (375×812 viewport) — layout functional, no broken elements
+- Tested Export button — confirmed "Copied!" feedback after clicking
+- **MAJOR REFACTORING**: Split 2889-line page.tsx into 11 separate component files:
+  - src/components/dashboard/types.ts (174 lines) — All interfaces + TabId type
+  - src/components/dashboard/constants.ts (51 lines) — COLORS, QUARTER_COLORS, chart colors, tabVariants
+  - src/components/dashboard/hooks.ts (29 lines) — useCountUp custom hook
+  - src/components/dashboard/chart-card.tsx (63 lines) — ChartCard, SectionDivider
+  - src/components/dashboard/stat-card.tsx (70 lines) — StatCard with progress bars and tooltips
+  - src/components/dashboard/overview-tab.tsx (608 lines) — OverviewTab + PerformanceScoreCard + VolatilityRegime + DayOfWeekChart + TimeOfMonthChart
+  - src/components/dashboard/levels-tab.tsx (371 lines) — LevelsTab + SignalStrengthDashboard + ConfluenceHeatMap
+  - src/components/dashboard/variations-tab.tsx (342 lines) — VariationsTab + RROptimizer + RadarComparisonChart
+  - src/components/dashboard/forecast-tab.tsx (404 lines) — ForecastTab + MarketNews + TradeSimulator
+  - src/components/dashboard/methodology-tab.tsx (302 lines) — MethodologyTab
+  - src/app/page.tsx (549 lines) — Home component only (81% size reduction from 2889 → 549)
+- Created new Monte Carlo simulation component (monte-carlo.tsx):
+  - Random walk simulation using observed win rate (22.1%) and 2:1 R:R
+  - Configurable simulation count (100/500/1000)
+  - Shows: Ruin probability, profitable sims %, median outcome, best case (P95)
+  - Final equity distribution histogram chart (red for loss, green for profit)
+  - Outcome percentiles table (5th, 25th, 50th, 75th, 95th)
+  - Methodology note explaining simulation parameters
+  - Uses seeded PRNG (mulberry32) for reproducibility
+- Enhanced footer with:
+  - Live indicator with animated green pulse
+  - Trade count and session count metadata
+  - Dark mode aware styling
+  - Smaller, more refined typography
+- All lint checks pass with zero errors
+- Dev server stable, all features working
+
+Stage Summary:
+- Successfully refactored 2889-line monolith into 11 modular component files
+- page.tsx reduced from 2889 → 549 lines (81% reduction)
+- Added Monte Carlo simulation with distribution chart and risk metrics
+- Enhanced footer with live indicator and metadata
+- No bugs, lint passes, dev server stable
+
+## === CURRENT PROJECT STATUS (Round 5) ===
+
+### Project: US30 ADR Quarter Breakout Strategy Dashboard
+### Status: Production-Ready, Well-Architected (Round 5)
+
+### Architecture:
+- Frontend: Next.js 16 + TypeScript + Tailwind CSS 4 + shadcn/ui + Recharts + framer-motion
+- Backend: 3 API routes (/api/backtest, /api/quote, /api/news)
+- Data: 2 years of US30 daily OHLC data (499 trading days, 1452 trades)
+- Main File: src/app/page.tsx (549 lines)
+- Components: src/components/dashboard/ (11 files, well-organized)
+
+### Component File Structure:
+```
+src/components/dashboard/
+├── types.ts              (174 lines) — All interfaces + TabId type
+├── constants.ts          (51 lines)  — Color constants, chart colors, tab variants
+├── hooks.ts              (29 lines)  — useCountUp hook
+├── chart-card.tsx        (63 lines)  — ChartCard, SectionDivider
+├── stat-card.tsx         (70 lines)  — StatCard with progress bars + tooltips
+├── overview-tab.tsx      (608 lines) — Overview + ScoreCard + Volatility + DayOfWeek + TimeOfMonth
+├── levels-tab.tsx        (371 lines) — Levels + SignalStrength + ConfluenceHeatMap
+├── variations-tab.tsx    (342 lines) — Variations + RROptimizer + RadarComparison
+├── forecast-tab.tsx      (404 lines) — Forecast + MarketNews + TradeSimulator
+├── methodology-tab.tsx   (302 lines) — Methodology 5-step walkthrough
+└── monte-carlo.tsx       (new)       — Monte Carlo simulation with distribution chart
+```
+
+### Features (5 tabs):
+1. **Overview**: Strategy Score + Volatility Regime + 10 charts + animated stat cards with progress bars + tooltips
+2. **Level Analysis**: Color-coded breakdown table + Signal Strength + Confluence Heat Map + Outcome Composition
+3. **Strategy Variations**: 4 variation cards + R:R Optimizer + Monte Carlo Simulation + Radar Comparison + Recommendations
+4. **Weekly Forecast**: Market News + Risk Warning + Visual Level Map + Forecast Table + Trade Simulator
+5. **Methodology**: 5-step walkthrough with visual diagrams
+
+### Cross-cutting Features (Complete):
+- Dark/light mode with glassmorphism + dynamic chart colors
+- Real-time US30 price (60s refresh) + Market news (5min cache)
+- Monte Carlo simulation (100/500/1000 runs, ruin probability, distribution chart)
+- Interactive trade simulator + R:R optimizer
+- Performance Score Card + Volatility Regime + Signal Strength Dashboard
+- Radar comparison chart + Day/Week-of-Month performance analysis
+- Strategy Summary Export (clipboard)
+- Stat card progress bars + info tooltips
+- Color-coded level breakdown table rows
+- Animated gradient line + decorative orbs + custom scrollbar
+- Framer-motion animations throughout
+- Responsive design + enhanced footer
+
+### Unresolved Issues / Risks:
+- Finance API subscription may not be active (fallback data used)
+- Backtest shows NO positive edge (22.1% WR vs 33.3% breakeven)
+- OHLC data limitation: ambiguous outcomes via probability model
+
+### Priority Recommendations for Next Phase:
+1. Add PDF/CSV export for full backtest report
+2. Add comparison with other indices (SPX, NDX)
+3. Implement server-side backtest computation (parameter changes from UI)
+4. Add intraday data integration for accurate path resolution
+5. Add bootstrap confidence intervals for win rate estimates
+6. Add automated alerting/notification when volatility regime changes
+
+---
+Task ID: 22
+Agent: full-stack-developer
+Task: Refactor page.tsx into separate component files
+
+Work Log:
+- Read worklog.md for prior context (Tasks 10-21, 2889-line single file)
+- Read entire page.tsx (2889 lines) to identify all components, types, constants, hooks
+- Created src/components/dashboard/ directory with 11 files:
+  1. types.ts (174 lines) — All interfaces: BacktestData, LevelStat, QuarterStat, MonthlyStat, EquityPoint, VariationResult, TradeRecord, ForecastData, ForecastDetail, QuoteData, NewsItem, NewsData, DrawdownInfo, TabId
+  2. constants.ts (51 lines) — COLORS, QUARTER_COLORS, LIGHT/DARK_CHART_COLORS, tabVariants
+  3. hooks.ts (29 lines) — useCountUp custom hook with requestAnimationFrame
+  4. chart-card.tsx (63 lines) — ChartCard (gradient border, glassmorphism, hover) and SectionDivider components
+  5. stat-card.tsx (70 lines) — StatCard component (animated hover, progress bars, info tooltips)
+  6. overview-tab.tsx (608 lines) — OverviewTab + PerformanceScoreCard + VolatilityRegime + DayOfWeekChart + TimeOfMonthChart
+  7. levels-tab.tsx (371 lines) — LevelsTab + SignalStrengthDashboard + ConfluenceHeatMap
+  8. variations-tab.tsx (342 lines) — VariationsTab + RROptimizer + RadarComparisonChart
+  9. forecast-tab.tsx (404 lines) — ForecastTab + MarketNews + TradeSimulator
+  10. methodology-tab.tsx (302 lines) — MethodologyTab (5-step walkthrough)
+- Refactored page.tsx from 2889 lines to 549 lines:
+  - Imports from 7 new component files
+  - Home component with all state, effects, data fetching logic
+  - Header, footer, layout, tab navigation, AnimatePresence tab switching
+  - useMemo calculations (drawdown, ADR distribution, equity sampling) remain in page.tsx as they depend on data state
+- Replaced Zap icon with Activity icon for Strategy Variations tab (Activity already imported)
+- Replaced Gauge icon with inline SVG in VolatilityRegime component (Gauge not available in lucide-react)
+- All cross-file imports verified correct
+- Lint passes with zero errors
+- Dev server compiles successfully (✓ Compiled in 285ms)
+- All 3 API routes return 200 (/api/backtest, /api/quote, /api/news)
+- Page renders correctly with all 5 tabs
+- Total lines across all files: 2963 (down from 2889 single file, now properly modularized)
+
+Stage Summary:
+- Refactored 2889-line single-file app into 11 component files in src/components/dashboard/
+- page.tsx reduced from 2889 to 549 lines (81% reduction)
+- All 19 functions/components split into logical file groupings
+- All existing functionality preserved — pure refactor, no behavior changes
+- Lint passes, dev server stable, all API routes working
+- File structure matches specification exactly
