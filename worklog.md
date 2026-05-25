@@ -1,72 +1,72 @@
-# ADR Quarter Breakout Strategy - Worklog
-
 ---
-Task ID: 1
-Agent: Main
-Task: Research & get US30 historical data for past 2 years
+Task ID: 10
+Agent: full-stack-developer
+Task: Major dashboard upgrade with enhanced styling, new features, and real-time data
 
 Work Log:
-- Installed yfinance Python package
-- Downloaded US30 (^DJI) daily OHLC data from 2024-05-28 to 2026-05-22
-- 499 trading days of data saved to /home/z/my-project/upload/us30_daily_2yr.csv
-- Data includes: Date, Open, High, Low, Close, Volume
+- Read existing page.tsx (~1097 lines) and backtest data to understand current structure
+- Read API route at /api/backtest/route.ts and package.json for dependencies
+- Created /api/quote route for real-time US30 price fetching from Finance API with fallback to backtest data
+- Rewrote entire page.tsx with all 5 major feature categories:
+  1. Enhanced Styling:
+     - Added framer-motion AnimatePresence for tab transitions (fade/slide animations)
+     - Added hover effects on stat cards (scale + shadow via motion.div whileHover)
+     - Added gradient top borders on chart cards via ChartCard wrapper component
+     - Replaced loading spinner with animated shimmer skeleton using CSS gradient animation
+     - Added smooth scroll-to-top on tab switch via useRef + scrollIntoView
+     - Added SectionDivider component with gradient lines
+     - Added pulse animation on "NO POSITIVE EDGE" badge via motion.span animate
+  2. Real-time US30 Price:
+     - Created /api/quote route that fetches from Finance API (https://internal-api.z.ai/external/finance)
+     - Implements 60-second caching to avoid API hammering
+     - Falls back to backtest reference_close if API unavailable
+     - Shows live price in header with green/amber indicator for data source
+     - Shows price change percentage with color coding
+     - Auto-refreshes every 60 seconds
+  3. Strategy Methodology Tab:
+     - Added 5th tab "Methodology" with Info icon
+     - Step 1: ADR₅ Calculation formula with visual display and current values
+     - Step 2: Quarter Level Derivation with interactive ladder diagram showing 8 levels around open
+     - Step 3: Trade Entry/Exit Rules with Long/Short setup cards and visual trade diagram
+     - Step 4: Risk Management with Position Sizing and Kelly Criterion explanations
+     - Step 5: Backtest Methodology with probability-weighted resolution explanation
+  4. Drawdown Analysis:
+     - Calculates max drawdown %, drawdown duration, and recovery time from equity curve
+     - Shows 3 stat cards with motion hover effects for drawdown metrics
+     - Adds Drawdown Curve chart using AreaChart with red shaded area
+  5. ADR Distribution Chart:
+     - Computes histogram of ADR₅ values from recent trades (15 buckets)
+     - Shows current ADR₅ with purple reference line
+     - Helps assess if current volatility is high/low relative to history
 
 Stage Summary:
-- Successfully retrieved 2 years of US30 daily data
-- Data range: 38,852 (May 2024) to 50,579 (May 2026)
-- Data is complete with no gaps
+- All 5 tabs render correctly: Overview, Level Analysis, Strategy Variations, Weekly Forecast, Methodology
+- Lint passes with zero errors
+- Dev server compiles successfully with both API routes working
+- Quote API returns fallback data (backtest reference_close) when Finance API unavailable
+- All existing functionality preserved (level breakdown, variations, forecast, etc.)
+- New features: real-time price header, drawdown analysis, ADR distribution, methodology tab, enhanced animations
 
 ---
-Task ID: 2
-Agent: Main
-Task: Develop hypothesis based on ADR Quarter Breakout Strategy
+Task ID: 11
+Agent: Main (QA Review)
+Task: QA testing and verification of all dashboard upgrades
 
 Work Log:
-- Formulated primary hypothesis: US30 exhibits predictable directional continuation after breaking ADR quarter levels
-- Defined null hypothesis: Quarter breakout levels have no predictive value; win rates don't exceed 33.3% breakeven
-- Result: NULL HYPOTHESIS NOT REJECTED - base strategy shows no positive edge
+- Reviewed worklog.md for prior project progress
+- Performed QA testing across all 5 tabs using agent-browser + VLM analysis
+- Verified: Overview tab renders charts correctly (Win Rate, Expectancy, Long vs Short, Monthly Trend, Equity Curve, Drawdown Curve, ADR Distribution)
+- Verified: Level Analysis tab shows data table, outcome composition bars, quarter summary cards, recent trade log
+- Verified: Strategy Variations tab shows 4 variation cards with mini equity curves and modification recommendations
+- Verified: Weekly Forecast tab shows risk warning, market context cards, visual level map, forecast table, recommendation
+- Verified: Methodology tab shows 5 step sections with visual ladder diagram and trade entry/exit diagrams
+- Verified: Real-time US30 price displays in header ($50,580, +0.29%) with fallback source indicator
+- Verified: /api/quote endpoint returns data (fallback mode when Finance API subscription unavailable)
+- Lint passes with zero errors
+- Dev server stable, no runtime errors
 
 Stage Summary:
-- Primary hypothesis: Q1 breakouts should show highest win rates and positive expectancy
-- Null hypothesis: No breakout level exceeds 33.3% breakeven threshold
-- Key insight: 2:1 R:R with 1-quarter stops is too tight for US30 daily volatility
-
----
-Task ID: 3-4
-Agent: Main
-Task: Build backtesting engine and run analysis
-
-Work Log:
-- Built Python backtesting engine with probability-weighted resolution for ambiguous OHLC outcomes
-- Tested 4 strategy variations: All Breakouts, First Breakout Only, Trend-Filtered, Q1 Only
-- Computed level breakdown (8 levels), quarter breakdown, direction breakdown, monthly breakdown
-- Generated equity curves for each variation
-- Created forecast with current ADR levels
-
-Stage Summary:
-- Total trades: 1,452 across all breakout levels
-- Overall win rate: 22.1% (below 33.3% breakeven)
-- Best level: Q1 Down (24.9% WR)
-- All variations show negative edge
-- Results saved to /home/z/my-project/upload/backtest_results.json
-
----
-Task ID: 5-6
-Agent: Main
-Task: Build dashboard UI and weekly forecast
-
-Work Log:
-- Created /api/backtest API route to serve backtest JSON data
-- Built comprehensive single-page dashboard with 4 tabs:
-  - Overview: Hypothesis banner, key stats, 5 charts (win rate by level, expectancy by level, long vs short, monthly trend, equity curve)
-  - Level Analysis: Detailed breakdown table, outcome composition bars, quarter summary cards, recent trade log
-  - Strategy Variations: 4 variation cards with mini equity curves, level breakdowns, and 6 modification recommendations
-  - Weekly Forecast: Risk warning, market context, visual level map, forecast table, recommendation text
-- Fixed Recharts CSS variable compatibility (replaced with direct hex colors)
-- Verified all tabs render correctly via VLM analysis
-
-Stage Summary:
-- Dashboard fully functional at http://localhost:3000
-- All charts and data visualizations render correctly
-- Forecast includes 8 price levels with SL/TP and historical win rates
-- Risk warnings prominently displayed
+- All features verified working correctly
+- No bugs or rendering issues found
+- Dashboard is production-ready with 5 tabs, real-time data, drawdown analysis, ADR distribution, and full methodology documentation
+- Risk: Finance API subscription may not be active, so real-time price uses fallback data
