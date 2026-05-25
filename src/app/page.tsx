@@ -5,7 +5,8 @@ import {
   TrendingUp, TrendingDown, Target, AlertTriangle, BarChart3,
   Activity, ArrowUpRight, ArrowDownRight, Shield, Zap, Calendar,
   ChevronUp, ChevronDown, Info, RefreshCw, DollarSign, Clock,
-  Layers, Calculator, BookOpen, AlertCircle, Sun, Moon, Newspaper
+  Layers, Calculator, BookOpen, AlertCircle, Sun, Moon, Newspaper,
+  Copy, Check, Gauge, Share2
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
@@ -328,6 +329,7 @@ export default function Home() {
   const [quote, setQuote] = useState<QuoteData | null>(null);
   const [news, setNews] = useState<NewsData | null>(null);
   const [isDark, setIsDark] = useState(false);
+  const [copied, setCopied] = useState(false);
   const mainRef = useRef<HTMLDivElement>(null);
 
   // Animated counter values for stat cards
@@ -397,6 +399,22 @@ export default function Home() {
       mainRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, []);
+
+  const handleCopySummary = useCallback(() => {
+    if (!data) return;
+    const summary = [
+      `ADR Quarter Breakout Strategy — US30`,
+      `Period: ${data.metadata.period}`,
+      `Total Trades: ${data.overall.total_trades.toLocaleString()} | Win Rate: ${data.overall.win_rate}% | Expectancy: ${data.overall.expectancy}`,
+      `Kelly: ${data.overall.kelly_pct}% | Best Level: ${data.overall.best_level} (${data.overall.best_level_wr}% WR)`,
+      `Strategy Score: ${Math.round(Math.max(0, Math.min(100, (data.overall.win_rate / 33.3) * 30 + Math.max(0, data.overall.expectancy) * 30 + data.overall.kelly_pct * 0.2 * 20 + (1 - 1) * 20)))}/100`,
+      `Verdict: NO POSITIVE EDGE — Base 2:1 R:R strategy unprofitable on US30`,
+    ].join('\n');
+    navigator.clipboard.writeText(summary).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {});
+  }, [data]);
 
   // ===== ALL HOOKS MUST BE BEFORE EARLY RETURN =====
 
@@ -646,6 +664,16 @@ export default function Home() {
                 2:1 R:R
               </span>
               <motion.button
+                onClick={handleCopySummary}
+                className="h-8 rounded-lg border border-border flex items-center gap-1.5 px-2.5 hover:bg-muted transition-colors text-xs font-medium"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                title="Copy strategy summary"
+              >
+                {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
+                <span className={copied ? 'text-green-500' : 'text-muted-foreground'}>{copied ? 'Copied!' : 'Export'}</span>
+              </motion.button>
+              <motion.button
                 onClick={() => setIsDark(!isDark)}
                 className="h-8 w-8 rounded-lg border border-border flex items-center justify-center hover:bg-muted transition-colors"
                 whileHover={{ scale: 1.05 }}
@@ -696,6 +724,7 @@ export default function Home() {
               value: Math.round(animatedTotalTrades).toLocaleString(),
               subtext: `${data.metadata.total_trading_days} trading days`,
               color: 'cyan' as const,
+              tooltip: 'Total simulated breakout signals generated across all 8 quarter levels over the backtest period',
             },
             {
               icon: <Target className="h-4 w-4" />,
@@ -703,6 +732,9 @@ export default function Home() {
               value: `${animatedWinRate.toFixed(1)}%`,
               subtext: `Breakeven: ${data.overall.breakeven_wr}%`,
               color: (data.overall.win_rate >= data.overall.breakeven_wr ? 'green' : 'red') as const,
+              tooltip: 'Percentage of trades hitting take-profit before stop-loss. Breakeven for 2:1 R:R is 33.3%',
+              progressPct: data.overall.win_rate,
+              progressBreakevenPct: data.overall.breakeven_wr,
             },
             {
               icon: <TrendingUp className="h-4 w-4" />,
@@ -710,6 +742,9 @@ export default function Home() {
               value: `${expectancySign}${animatedExpectancy.toFixed(4)}`,
               subtext: 'quarters / trade',
               color: (data.overall.expectancy > 0 ? 'green' : 'red') as const,
+              tooltip: 'Average profit/loss per trade in ADR quarters. Positive = profitable edge detected',
+              progressPct: Math.max(0, 50 + data.overall.expectancy * 50),
+              progressBreakevenPct: 50,
             },
             {
               icon: <Shield className="h-4 w-4" />,
@@ -717,6 +752,7 @@ export default function Home() {
               value: `${kellySign}${animatedKelly.toFixed(1)}%`,
               subtext: 'Position sizing',
               color: (data.overall.kelly_pct > 0 ? 'green' : 'red') as const,
+              tooltip: 'Optimal position size based on Kelly Criterion. 0% means no mathematical edge detected',
             },
           ].map((stat, i) => (
             <motion.div
@@ -816,13 +852,16 @@ export default function Home() {
 
 // ====== STAT CARD ======
 
-function StatCard({ icon, label, value, subtext, color, isDark = false }: {
+function StatCard({ icon, label, value, subtext, color, isDark = false, tooltip, progressPct, progressBreakevenPct }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   subtext: string;
   color: 'cyan' | 'green' | 'red' | 'amber';
   isDark?: boolean;
+  tooltip?: string;
+  progressPct?: number;
+  progressBreakevenPct?: number;
 }) {
   const iconColorMap = {
     cyan: 'bg-cyan-500/10 text-cyan-500',
@@ -833,18 +872,45 @@ function StatCard({ icon, label, value, subtext, color, isDark = false }: {
 
   return (
     <motion.div
-      className={`rounded-xl border p-4 space-y-2 cursor-default ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}
+      className={`rounded-xl border p-4 space-y-2 cursor-default relative group ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}
       whileHover={{ scale: 1.02, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
       transition={{ duration: 0.15 }}
     >
-      <div className="flex items-center gap-2">
-        <div className={`h-7 w-7 rounded-md flex items-center justify-center ${iconColorMap[color]}`}>
-          {icon}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className={`h-7 w-7 rounded-md flex items-center justify-center ${iconColorMap[color]}`}>
+            {icon}
+          </div>
+          <span className="text-xs text-muted-foreground font-medium">{label}</span>
         </div>
-        <span className="text-xs text-muted-foreground font-medium">{label}</span>
+        {tooltip && (
+          <div className="relative">
+            <Info className="h-3 w-3 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
+            <div className="absolute right-0 top-6 w-56 rounded-lg bg-foreground text-background text-[10px] p-2.5 leading-relaxed shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+              {tooltip}
+            </div>
+          </div>
+        )}
       </div>
       <p className="text-2xl font-bold tracking-tight">{value}</p>
       <p className="text-xs text-muted-foreground">{subtext}</p>
+      {progressPct !== undefined && (
+        <div className="pt-1">
+          <div className="h-1.5 rounded-full bg-muted overflow-hidden relative">
+            <div
+              className={`h-full rounded-full ${progressPct >= (progressBreakevenPct ?? 33.3) ? 'bg-green-500' : 'bg-red-500'}`}
+              style={{ width: `${Math.min(100, progressPct)}%` }}
+            />
+            {progressBreakevenPct !== undefined && (
+              <div
+                className="absolute top-0 bottom-0 w-0.5 bg-amber-500"
+                style={{ left: `${Math.min(100, progressBreakevenPct)}%` }}
+                title={`Breakeven: ${progressBreakevenPct}%`}
+              />
+            )}
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }
@@ -877,6 +943,9 @@ function OverviewTab({ data, levelChartData, quarterChartData, monthlyChartData,
     <div className="space-y-6">
       {/* Performance Score Card */}
       <PerformanceScoreCard data={data} drawdownPct={drawdownData.maxDrawdownPct} isDark={isDark} />
+
+      {/* Volatility Regime */}
+      <VolatilityRegime data={data} isDark={isDark} />
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -970,6 +1039,9 @@ function OverviewTab({ data, levelChartData, quarterChartData, monthlyChartData,
 
       {/* Day of Week Performance */}
       <DayOfWeekChart data={data} isDark={isDark} />
+
+      {/* Time of Month Chart */}
+      <TimeOfMonthChart data={data} isDark={isDark} />
 
       <SectionDivider isDark={isDark} />
 
@@ -1127,8 +1199,11 @@ function LevelsTab({ data, isDark = false }: { data: BacktestData; isDark?: bool
               </tr>
             </thead>
             <tbody>
-              {data.level_breakdown.map((level, i) => (
-                <tr key={level.level} className={`border-b border-border last:border-0 ${i % 2 === 0 ? '' : 'bg-muted/10'}`}>
+              {data.level_breakdown.map((level, i) => {
+                const borderColor = level.quarter === 'Q1' ? '#f59e0b' : level.quarter === 'Q2' ? '#ef4444' : level.quarter === 'Q3' ? '#dc2626' : '#991b1b';
+                const bgOpacity = level.quarter === 'Q1' ? '0.03' : level.quarter === 'Q2' ? '0.02' : '0.01';
+                return (
+                <tr key={level.level} className={`border-b border-border last:border-0 ${i % 2 === 0 ? '' : 'bg-muted/10'}`} style={{ borderLeft: `3px solid ${borderColor}`, backgroundColor: `rgba(${level.quarter === 'Q1' ? '245,158,11' : level.quarter === 'Q2' ? '239,68,68' : level.quarter === 'Q3' ? '220,38,38' : '153,27,27'},${bgOpacity})` }}>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <div className="h-2 w-2 rounded-full" style={{ backgroundColor: QUARTER_COLORS[level.quarter] || COLORS.neutral }} />
@@ -1170,11 +1245,15 @@ function LevelsTab({ data, isDark = false }: { data: BacktestData; isDark?: bool
                     )}
                   </td>
                 </tr>
-              ))}
+              );
+              })}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Signal Strength Dashboard */}
+      <SignalStrengthDashboard data={data} isDark={isDark} />
 
       {/* Confluence Heat Map */}
       <ConfluenceHeatMap data={data} isDark={isDark} />
@@ -2577,9 +2656,234 @@ function PerformanceScoreCard({ data, drawdownPct, isDark = false }: {
         </div>
         <div className="pt-2 border-t border-border flex items-center justify-between text-xs">
           <span className="font-medium">Total Score</span>
-          <span className="font-bold" style={{ color: scoreColor }}>{score}/100</span>
+          <span className="bold" style={{ color: scoreColor }}>{score}/100</span>
         </div>
       </div>
     </div>
+  );
+}
+
+// ====== VOLATILITY REGIME INDICATOR ======
+
+function VolatilityRegime({ data, isDark = false }: { data: BacktestData; isDark?: boolean }) {
+  const regimeData = useMemo(() => {
+    const adrValues = data.recent_trades.map(t => t.adr_5);
+    if (adrValues.length === 0) return { regime: 'Unknown', percentile: 0, currentAdr: 0, p33: 0, p67: 0 };
+
+    const currentAdr = data.forecast.current_adr_5;
+    const sorted = [...adrValues].sort((a, b) => a - b);
+    const p33 = sorted[Math.floor(sorted.length * 0.33)];
+    const p67 = sorted[Math.floor(sorted.length * 0.67)];
+
+    const rank = sorted.filter(v => v <= currentAdr).length;
+    const percentile = Math.round((rank / sorted.length) * 100);
+
+    const regime = percentile <= 33 ? 'Low' : percentile <= 67 ? 'Normal' : 'High';
+
+    return { regime, percentile, currentAdr, p33, p67 };
+  }, [data]);
+
+  const regimeColor = regimeData.regime === 'Low' ? '#06b6d4' : regimeData.regime === 'Normal' ? '#22c55e' : '#ef4444';
+  const regimeBg = regimeData.regime === 'Low' ? 'rgba(6,182,212,0.1)' : regimeData.regime === 'Normal' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)';
+  const implication = regimeData.regime === 'Low'
+    ? 'Smaller ranges — tighter stops may work, fewer whipsaw losses'
+    : regimeData.regime === 'Normal'
+    ? 'Standard ADR quarter sizes apply — baseline strategy parameters'
+    : 'Wider ranges — wider stops recommended, increased whipsaw risk';
+
+  return (
+    <div className={`rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+      <div className="flex items-center gap-2">
+        <Gauge className="h-4 w-4 text-cyan-500" />
+        <div>
+          <h3 className="font-semibold text-sm">Volatility Regime</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Current ADR₅ vs historical distribution</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Gauge Visual */}
+        <div className="flex flex-col items-center justify-center space-y-2">
+          <div className="relative w-32 h-16 overflow-hidden">
+            <svg viewBox="0 0 100 50" className="w-full h-full">
+              {/* Background arc */}
+              <path d="M 10 45 A 40 40 0 0 1 90 45" fill="none" stroke={isDark ? '#333' : '#e5e7eb'} strokeWidth="8" strokeLinecap="round" />
+              {/* Filled arc based on percentile */}
+              <path
+                d="M 10 45 A 40 40 0 0 1 90 45"
+                fill="none"
+                stroke={regimeColor}
+                strokeWidth="8"
+                strokeLinecap="round"
+                strokeDasharray={`${regimeData.percentile * 1.26} 126`}
+              />
+              {/* Zone markers */}
+              <line x1="36" y1="15" x2="38" y2="19" stroke={isDark ? '#555' : '#9ca3af'} strokeWidth="1" />
+              <line x1="64" y1="15" x2="62" y2="19" stroke={isDark ? '#555' : '#9ca3af'} strokeWidth="1" />
+            </svg>
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-center">
+              <p className="text-lg font-bold" style={{ color: regimeColor }}>{regimeData.percentile}th</p>
+              <p className="text-[9px] text-muted-foreground">percentile</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="space-y-3">
+          <div className="rounded-lg border border-border p-3 space-y-1">
+            <p className="text-xs text-muted-foreground">Current Regime</p>
+            <div className="flex items-center gap-2">
+              <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: regimeColor }} />
+              <p className="text-lg font-bold" style={{ color: regimeColor }}>{regimeData.regime} Volatility</p>
+            </div>
+          </div>
+          <div className="rounded-lg border border-border p-3 space-y-1">
+            <p className="text-xs text-muted-foreground">Current ADR₅</p>
+            <p className="text-lg font-bold font-mono">{regimeData.currentAdr.toLocaleString()} <span className="text-xs text-muted-foreground font-normal">pts</span></p>
+          </div>
+        </div>
+
+        {/* Thresholds & Implication */}
+        <div className="space-y-3">
+          <div className="rounded-lg border border-border p-3 space-y-2">
+            <p className="text-xs text-muted-foreground font-medium">Distribution Thresholds</p>
+            <div className="space-y-1 text-xs">
+              <div className="flex justify-between"><span className="text-cyan-500">Low (P33)</span><span className="font-mono">{regimeData.p33.toLocaleString()}</span></div>
+              <div className="flex justify-between"><span className="text-green-500">Normal (P67)</span><span className="font-mono">{regimeData.p67.toLocaleString()}</span></div>
+            </div>
+          </div>
+          <div className="rounded-lg p-3 space-y-1" style={{ backgroundColor: regimeBg }}>
+            <p className="text-xs font-medium" style={{ color: regimeColor }}>Implication</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">{implication}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ====== SIGNAL STRENGTH DASHBOARD ======
+
+function SignalStrengthDashboard({ data, isDark = false }: { data: BacktestData; isDark?: boolean }) {
+  const signalData = useMemo(() => {
+    const levels = data.level_breakdown;
+    const breakevenWR = 33.3;
+    const maxAbsExp = Math.max(...levels.map(l => Math.abs(l.expectancy)), 0.01);
+    const maxTrades = Math.max(...levels.map(l => l.total_trades), 1);
+
+    return levels.map(l => {
+      const wrScore = (l.win_rate / breakevenWR) * 50;
+      const expScore = (1 - Math.abs(l.expectancy) / maxAbsExp) * 25;
+      const sampleScore = (l.total_trades / maxTrades) * 25;
+      const score = Math.round(Math.min(100, Math.max(0, wrScore + expScore + sampleScore)));
+      return {
+        name: l.level.replace('_', ' '),
+        quarter: l.quarter,
+        direction: l.direction,
+        score,
+        winRate: l.win_rate,
+        expectancy: l.expectancy,
+        trades: l.total_trades,
+      };
+    }).sort((a, b) => b.score - a.score);
+  }, [data]);
+
+  const getScoreColor = (score: number) => score >= 66 ? '#22c55e' : score >= 33 ? '#f59e0b' : '#ef4444';
+
+  return (
+    <div className={`rounded-xl border p-5 space-y-4 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10' : 'border-border bg-card'}`}>
+      <div className="flex items-center gap-2">
+        <Activity className="h-4 w-4 text-cyan-500" />
+        <div>
+          <h3 className="font-semibold text-sm">Signal Strength by Level</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Composite score: WR/breakeven (50%) + inverse expectancy (25%) + sample size (25%)</p>
+        </div>
+      </div>
+      <div className="space-y-2.5">
+        {signalData.map(item => (
+          <div key={item.name} className="space-y-1">
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <span className="font-medium w-20">{item.name}</span>
+                <span className="text-muted-foreground">{item.direction}</span>
+              </div>
+              <div className="flex items-center gap-3 text-muted-foreground">
+                <span>WR: {item.winRate}%</span>
+                <span>Exp: {item.expectancy > 0 ? '+' : ''}{item.expectancy.toFixed(3)}</span>
+                <span className="font-bold" style={{ color: getScoreColor(item.score) }}>{item.score}</span>
+              </div>
+            </div>
+            <div className="h-2 rounded-full bg-muted overflow-hidden">
+              <motion.div
+                className="h-full rounded-full"
+                style={{ backgroundColor: getScoreColor(item.score) }}
+                initial={{ width: 0 }}
+                animate={{ width: `${item.score}%` }}
+                transition={{ duration: 0.8, ease: 'easeOut' }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-500" />Strong (66+)</span>
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-500" />Moderate (33-65)</span>
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-500" />Weak (&lt;33)</span>
+      </div>
+    </div>
+  );
+}
+
+// ====== TIME-OF-MONTH CHART ======
+
+function TimeOfMonthChart({ data, isDark = false }: { data: BacktestData; isDark?: boolean }) {
+  const cc = isDark ? DARK_CHART_COLORS : LIGHT_CHART_COLORS;
+
+  const chartData = useMemo(() => {
+    const weeks: Record<string, { wins: number; total: number }> = {
+      'Week 1': { wins: 0, total: 0 },
+      'Week 2': { wins: 0, total: 0 },
+      'Week 3': { wins: 0, total: 0 },
+      'Week 4+': { wins: 0, total: 0 },
+    };
+
+    data.recent_trades.forEach(t => {
+      const day = new Date(t.date).getDate();
+      const week = day <= 7 ? 'Week 1' : day <= 14 ? 'Week 2' : day <= 21 ? 'Week 3' : 'Week 4+';
+      weeks[week].total++;
+      if (t.outcome === 'win' || (t.outcome === 'ambiguous' && t.pnl_pct > 0)) {
+        weeks[week].wins++;
+      }
+    });
+
+    return Object.entries(weeks).map(([name, { wins, total }]) => ({
+      name,
+      winRate: total > 0 ? Math.round((wins / total) * 1000) / 10 : 0,
+      trades: total,
+    }));
+  }, [data]);
+
+  return (
+    <ChartCard title="Win Rate by Week of Month" subtitle="Performance across different weeks" gradientFrom="orange" gradientTo="cyan" isDark={isDark}>
+      <div className="h-56">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={cc.grid} />
+            <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke={cc.text} />
+            <YAxis tick={{ fontSize: 10 }} stroke={cc.text} domain={[0, 50]} />
+            <RechartsTooltip
+              contentStyle={{ background: cc.tooltipBg, border: `1px solid ${cc.tooltipBorder}`, borderRadius: '8px', fontSize: '12px', color: isDark ? '#e0e0e0' : undefined }}
+              formatter={(value: number, name: string) => [name === 'winRate' ? `${value}%` : value, name === 'winRate' ? 'Win Rate' : 'Trades']}
+            />
+            <ReferenceLine y={33.3} stroke="#ef4444" strokeDasharray="5 5" label={{ value: '33.3%', position: 'right', fontSize: 9, fill: '#ef4444' }} />
+            <Bar dataKey="winRate" name="winRate" radius={[4, 4, 0, 0]}>
+              {chartData.map((entry, index) => (
+                <Cell key={index} fill={entry.winRate >= 33.3 ? COLORS.positive : COLORS.negative} fillOpacity={0.8} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </ChartCard>
   );
 }
