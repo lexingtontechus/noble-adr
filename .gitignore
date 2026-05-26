@@ -52,3 +52,29 @@ prompt
 server.log
 # Skills directory
 /skills/
+
+# QA screenshots
+qa*.png
+screenshot*.png
+screenshot*.jpg
+
+# Agent context
+/agent-ctx/
+
+# Database
+/db/
+
+# Upload data
+/upload/
+
+# Work backups
+worklog_backup.md
+
+# Z scripts
+.zscripts/
+
+# Download
+/download/
+
+# Examples
+/examples/
