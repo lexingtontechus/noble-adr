@@ -1126,3 +1126,107 @@ src/components/dashboard/
 4. Implement server-side backtest computation (parameter changes from UI)
 5. Add automated alerts when volatility regime changes
 6. Add intraday data integration for accurate path resolution
+
+---
+Task ID: 23
+Agent: Main (GitHub Deployment)
+Task: Review codebase, deploy to GitHub repo "noble-adr", create scheduled task
+
+Work Log:
+- Reviewed worklog.md for full project history (Tasks 10-22+)
+- Verified dev server running on port 3000, all API endpoints returning 200
+- Verified git already initialized with prior commits on main branch
+- Updated .gitignore to exclude non-project files:
+  - QA screenshots (qa*.png, screenshot*.png)
+  - Agent context (/agent-ctx/)
+  - Database files (/db/)
+  - Upload data (/upload/)
+  - Work backups (worklog_backup.md)
+  - Z scripts (.zscripts/)
+  - Download directory (/download/)
+  - Examples (/examples/)
+- Created GitHub repository "noble-adr" at lexingtontechus/noble-adr (public)
+- Added GitHub remote with PAT authentication
+- Created comprehensive README.md with:
+  - Strategy overview and key finding
+  - 6 dashboard tabs feature table
+  - Complete cross-cutting features list
+  - Tech stack, project structure, API endpoints
+  - Backtest results summary table
+  - Keyboard shortcuts reference
+  - Setup/installation instructions
+  - License and disclaimer
+- Cleaned repo by removing 511 tracked-but-ignored files:
+  - 38 QA screenshots
+  - ~460 skills/ directory files
+  - agent-ctx/, db/, upload/, examples/ directories
+  - .env, .zscripts/ files
+  - worklog_backup.md
+- Pushed 2 commits to GitHub:
+  1. "feat: add README, update .gitignore for clean repo"
+  2. "chore: clean repo - remove QA screenshots, skills, agent context, and data files"
+- Created 15-minute scheduled task (cron job ID: 170775) for automated webDevReview
+- Verified final repo structure on GitHub: clean source-only files
+
+Stage Summary:
+- GitHub repo: https://github.com/lexingtontechus/noble-adr
+- Repo contains: .gitignore, Caddyfile, README.md, bun.lock, components.json, eslint.config.mjs, mini-services/, next.config.ts, package.json, postcss.config.mjs, prisma/, public/, src/, tailwind.config.ts, tsconfig.json, worklog.md
+- 15-minute cron job created (ID: 170775) for automated development review
+- All source code properly pushed, non-project files excluded
+- Dev server still running, all features intact
+
+## === CURRENT PROJECT STATUS (Round 6 - GitHub Deployment) ===
+
+### Project: US30 ADR Quarter Breakout Strategy Dashboard
+### Status: Production-Ready, Deployed to GitHub
+### GitHub: https://github.com/lexingtontechus/noble-adr
+
+### Architecture:
+- Frontend: Next.js 16 + TypeScript + Tailwind CSS 4 + shadcn/ui + Recharts + framer-motion
+- Backend: 3 API routes (/api/backtest, /api/quote, /api/news)
+- Data: 2 years of US30 daily OHLC data (499 trading days, 1452 trades)
+- Main File: src/app/page.tsx (~860 lines)
+- Components: src/components/dashboard/ (14 files)
+
+### Component File Structure:
+```
+src/components/dashboard/
+├── types.ts              — All interfaces + TabId type
+├── constants.ts          — Color constants, chart colors, tab variants
+├── hooks.ts              — useCountUp hook
+├── chart-card.tsx        — ChartCard, SectionDivider
+├── stat-card.tsx         — StatCard with progress bars + tooltips
+├── overview-tab.tsx      — Overview + ScoreCard + Volatility + DayOfWeek + TimeOfMonth
+├── levels-tab.tsx        — Levels + SignalStrength + ConfluenceHeatMap
+├── variations-tab.tsx    — Variations + RROptimizer + RadarComparison
+├── forecast-tab.tsx      — Forecast + MarketNews + TradeSimulator
+├── methodology-tab.tsx   — Methodology 5-step walkthrough
+├── monte-carlo.tsx       — Monte Carlo simulation
+├── advanced-tab.tsx      — Advanced analytics tab
+├── advanced-analytics.tsx — Analytics components
+└── risk-metrics.tsx      — Risk metrics components
+```
+
+### Features (6 tabs):
+1. **Overview**: Strategy Score + Volatility Regime + 10 charts + animated stat cards
+2. **Level Analysis**: Color-coded breakdown table + Signal Strength + Confluence Heat Map
+3. **Strategy Variations**: 4 variation cards + R:R Optimizer + Monte Carlo + Radar Comparison
+4. **Weekly Forecast**: Market News + Risk Warning + Level Map + Trade Simulator
+5. **Methodology**: 5-step walkthrough with visual diagrams
+6. **Analytics**: Advanced statistical analysis, correlation matrices, regime detection
+
+### Scheduled Tasks:
+- 15-minute webDevReview cron job (ID: 170775) — auto QA + development cycle
+
+### Unresolved Issues / Risks:
+- Finance API subscription may not be active (fallback data used)
+- Backtest shows NO positive edge (22.1% WR vs 33.3% breakeven)
+- OHLC data limitation: ambiguous outcomes via probability model
+
+### Priority Recommendations for Next Phase:
+1. Expand analytics to use full trade dataset (beyond recent 30)
+2. Add PDF/CSV export for full backtest report
+3. Add comparison with other indices (SPX, NDX)
+4. Implement server-side backtest computation (parameter changes from UI)
+5. Add automated alerts when volatility regime changes
+6. Add intraday data integration for accurate path resolution
