@@ -64,6 +64,13 @@ export function StatCard({ icon, label, value, subtext, color, isDark = false, t
     amber: 'from-amber-500 to-orange-600',
   };
 
+  const glowColorMap = {
+    cyan: 'rgba(6, 182, 212, 0.4)',
+    green: 'rgba(34, 197, 94, 0.4)',
+    red: 'rgba(239, 68, 68, 0.4)',
+    amber: 'rgba(245, 158, 11, 0.4)',
+  };
+
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -80,11 +87,27 @@ export function StatCard({ icon, label, value, subtext, color, isDark = false, t
 
   return (
     <motion.div
-      className={`rounded-xl border p-4 space-y-2 cursor-default relative group overflow-hidden ripple-container ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}
-      whileHover={{ scale: 1.02, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+      className="rounded-xl p-[1px] relative"
+      style={{
+        background: `linear-gradient(135deg, ${glowColorMap[color]}, transparent 60%)`,
+      }}
+      whileHover={{ scale: 1.02 }}
       transition={{ duration: 0.15 }}
-      onClick={handleClick}
     >
+      {/* Pulsing glow overlay */}
+      <motion.div
+        className="absolute inset-0 rounded-xl pointer-events-none"
+        style={{
+          background: `linear-gradient(135deg, ${glowColorMap[color]}, transparent 60%)`,
+          filter: 'blur(4px)',
+        }}
+        animate={{ opacity: [0.3, 0.6, 0.3] }}
+        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <div
+        className={`rounded-xl border p-4 space-y-2 cursor-default relative group overflow-hidden ripple-container ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}
+        onClick={handleClick}
+      >
       {/* Background sparkline */}
       <div className="absolute bottom-2 right-2 pointer-events-none">
         <MiniSparkline color={color} isDark={isDark} />
@@ -129,6 +152,7 @@ export function StatCard({ icon, label, value, subtext, color, isDark = false, t
           </div>
         </div>
       )}
+      </div>
     </motion.div>
   );
 }

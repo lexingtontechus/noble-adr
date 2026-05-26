@@ -32,6 +32,73 @@ function StaggerChild({ children }: { children: React.ReactNode }) {
 
 // ====== MAIN HOME COMPONENT ======
 
+// ====== PARTICLES BACKGROUND (Dark Mode) ======
+
+function ParticlesBackground() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animationId: number;
+    const particleCount = 50;
+    const particles: { x: number; y: number; vx: number; vy: number; size: number }[] = [];
+
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+
+    // Initialize particles
+    for (let i = 0; i < particleCount; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+        size: Math.random() * 2 + 0.5,
+      });
+    }
+
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const p of particles) {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0) p.x = canvas.width;
+        if (p.x > canvas.width) p.x = 0;
+        if (p.y < 0) p.y = canvas.height;
+        if (p.y > canvas.height) p.y = 0;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(6, 182, 212, 0.15)';
+        ctx.fill();
+      }
+      animationId = requestAnimationFrame(animate);
+    };
+    animate();
+
+    return () => {
+      cancelAnimationFrame(animationId);
+      window.removeEventListener('resize', resize);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 pointer-events-none z-0 hidden dark:block"
+      style={{ opacity: 0.3 }}
+    />
+  );
+}
+
 export default function Home() {
   const [data, setData] = useState<BacktestData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -434,6 +501,9 @@ export default function Home() {
         }
       `}</style>
 
+      {/* Animated Particles Background (dark mode only) */}
+      <ParticlesBackground />
+
       {/* Decorative Background Orbs (hidden on mobile) */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden hidden lg:block z-0">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-cyan-500/5 rounded-full blur-3xl" />
@@ -634,7 +704,7 @@ export default function Home() {
 
         {/* Modern Pill-Style Tab Navigation */}
         <div className="flex items-center justify-center">
-          <div className="inline-flex items-center gap-1 p-1 rounded-full bg-muted max-w-full overflow-x-auto scrollbar-none" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="inline-flex items-center gap-1 p-1 rounded-full bg-muted max-w-full overflow-x-auto scrollbar-none relative" style={{ WebkitOverflowScrolling: 'touch' }}>
             {[
               { id: 'overview', label: 'Overview', icon: <BarChart3 className="h-3.5 w-3.5" /> },
               { id: 'levels', label: 'Levels', icon: <Target className="h-3.5 w-3.5" /> },
@@ -646,12 +716,20 @@ export default function Home() {
               <button
                 key={tab.id}
                 onClick={() => handleTabChange(tab.id as TabId)}
-                className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 whitespace-nowrap touch-manipulation ${
+                className={`relative flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 text-sm font-medium rounded-full transition-colors duration-200 whitespace-nowrap touch-manipulation ${
                   activeTab === tab.id
-                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    ? 'text-primary-foreground'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:bg-muted/70'
                 }`}
               >
+                {activeTab === tab.id && (
+                  <motion.div
+                    layoutId="activeTabBg"
+                    className="absolute inset-0 bg-primary rounded-full shadow-sm"
+                    style={{ zIndex: -1 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  />
+                )}
                 {tab.icon}
                 <span className="hidden xs:inline sm:inline">{tab.label}</span>
               </button>

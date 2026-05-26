@@ -1230,3 +1230,26 @@ src/components/dashboard/
 4. Implement server-side backtest computation (parameter changes from UI)
 5. Add automated alerts when volatility regime changes
 6. Add intraday data integration for accurate path resolution
+
+---
+Task ID: 7
+Agent: development-agent
+Task: Styling improvements and new features (Round 7)
+
+Work Log:
+- Added animated particles background for dark mode in page.tsx: Canvas-based with 50 slow-moving cyan dots, opacity 0.15, only visible in dark mode via hidden dark:block
+- Enhanced stat cards with gradient border glow in stat-card.tsx: Wrapped card in outer div with gradient background, added pulsing glow overlay using framer-motion animate with 3s cycle, color-matched to stat color (cyan/green/red/amber)
+- Added tab navigation sliding indicator in page.tsx: Used framer-motion layoutId="activeTabBg" on active tab background, spring animation (stiffness 400, damping 30) for smooth slide between tabs
+- Added chart card badge prop in chart-card.tsx: Optional badge prop with text and color, animated mount with spring scale animation, applied to Win Rate by Level chart (8 levels) and ADR Distribution chart (15 buckets)
+- Created Strategy Parameter Panel in overview-tab.tsx: R:R ratio slider (1:1 to 4:1), dynamic breakeven WR calculation, gap from current WR, edge verdict (Positive/Negative), recommended Kelly position sizing with half-Kelly suggestion
+- Created Trade Outcome Waterfall Chart in overview-tab.tsx: Last 20 trades from recent_trades, green bars for wins and red bars for losses, sequential P&L visualization, placed between equity curve and drawdown sections
+- Created Correlation Matrix in advanced-tab.tsx: 5 correlation factors (ADR5 vs WR, Quarter vs Exp, Direction vs WR, Quarter vs WR, Dir vs Exp), heatmap-style colored cells with Pearson r values, ADR regime breakdown (Low/Mid/High), Long/Short direction breakdown
+- Fixed lint error: Replaced map-based runningEquity mutation with for-loop pattern to satisfy react-hooks/immutability rule
+- Lint passes with zero errors, dev server stable
+
+Stage Summary:
+- All 4 styling improvements implemented: particles background, gradient border glow, tab sliding indicator, chart card badges
+- All 3 new features implemented: Strategy Parameter Panel, Trade Outcome Waterfall, Correlation Matrix
+- Lint passes with zero errors, dev server stable, all API routes returning 200
+- All existing functionality preserved across all 6 tabs
+

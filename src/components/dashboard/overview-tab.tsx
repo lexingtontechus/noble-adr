@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-  TrendingDown, Clock, RefreshCw
+  TrendingDown, Clock, RefreshCw, Sliders, Shield, TrendingUp, AlertTriangle, CheckCircle
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
@@ -353,6 +353,194 @@ function TimeOfMonthChart({ data, isDark = false }: { data: BacktestData; isDark
   );
 }
 
+// ====== STRATEGY PARAMETER PANEL ======
+
+function StrategyParameterPanel({ data, isDark = false }: { data: BacktestData; isDark?: boolean }) {
+  const [rrRatio, setRrRatio] = useState(2.0);
+
+  const params = useMemo(() => {
+    const wr = data.overall.win_rate / 100; // Convert to decimal
+    const breakevenWR = (1 / (1 + rrRatio)) * 100; // Breakeven WR for given R:R
+    const gap = data.overall.win_rate - breakevenWR;
+    const hasEdge = gap > 0;
+
+    // Kelly Criterion: f* = (bp - q) / b
+    // b = reward/risk ratio, p = win probability, q = 1 - p
+    const kelly = ((rrRatio * wr) - (1 - wr)) / rrRatio;
+    const kellyPct = Math.max(0, kelly * 100);
+
+    return {
+      breakevenWR: breakevenWR.toFixed(1),
+      gap: gap.toFixed(1),
+      hasEdge,
+      kellyPct: kellyPct.toFixed(1),
+      edgeLabel: hasEdge ? 'Positive Edge' : 'Negative Edge',
+      edgeColor: hasEdge ? '#22c55e' : '#ef4444',
+    };
+  }, [data.overall.win_rate, rrRatio]);
+
+  return (
+    <div className={`rounded-xl border p-5 space-y-5 ${isDark ? 'backdrop-blur-md bg-white/5 border-white/10 glassmorphism-card' : 'border-border bg-card'}`}>
+      <div className="flex items-center gap-2">
+        <Sliders className="h-4 w-4 text-cyan-500" />
+        <div>
+          <h3 className="font-semibold text-sm">Strategy Parameter Panel</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Adjust R:R ratio to explore edge dynamics</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {/* R:R Slider */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground font-medium">Reward:Risk Ratio</span>
+            <span className="text-lg font-bold font-mono text-cyan-500">{rrRatio.toFixed(2)}:1</span>
+          </div>
+          <input
+            type="range"
+            min={1}
+            max={4}
+            step={0.25}
+            value={rrRatio}
+            onChange={(e) => setRrRatio(Number(e.target.value))}
+            className="w-full h-2 rounded-full appearance-none cursor-pointer"
+            style={{
+              background: `linear-gradient(to right, #06b6d4 ${((rrRatio - 1) / 3) * 100}%, ${isDark ? '#333' : '#e5e7eb'} ${((rrRatio - 1) / 3) * 100}%)`,
+            }}
+          />
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+            <span>1:1</span>
+            <span>2:1</span>
+            <span>3:1</span>
+            <span>4:1</span>
+          </div>
+        </div>
+
+        {/* Calculated Results */}
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className={`rounded-lg border p-3 space-y-1 ${isDark ? 'border-white/10' : 'border-border'}`}>
+              <p className="text-[10px] text-muted-foreground">Breakeven WR</p>
+              <p className="text-lg font-bold font-mono">{params.breakevenWR}%</p>
+            </div>
+            <div className={`rounded-lg border p-3 space-y-1 ${isDark ? 'border-white/10' : 'border-border'}`}>
+              <p className="text-[10px] text-muted-foreground">Gap from Current</p>
+              <p className="text-lg font-bold font-mono" style={{ color: params.hasEdge ? '#22c55e' : '#ef4444' }}>
+                {Number(params.gap) > 0 ? '+' : ''}{params.gap}%
+              </p>
+            </div>
+          </div>
+
+          {/* Verdict */}
+          <motion.div
+            className={`rounded-lg border p-3 flex items-center gap-2 ${isDark ? 'border-white/10' : 'border-border'}`}
+            style={{ backgroundColor: `${params.edgeColor}10`, borderColor: `${params.edgeColor}30` }}
+            key={params.edgeLabel}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            {params.hasEdge
+              ? <CheckCircle className="h-4 w-4" style={{ color: params.edgeColor }} />
+              : <AlertTriangle className="h-4 w-4" style={{ color: params.edgeColor }} />
+            }
+            <div>
+              <p className="text-xs font-semibold" style={{ color: params.edgeColor }}>{params.edgeLabel}</p>
+              <p className="text-[10px] text-muted-foreground">
+                Current WR ({data.overall.win_rate}%) {params.hasEdge ? 'exceeds' : 'below'} breakeven ({params.breakevenWR}%)
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Kelly Position Sizing */}
+          <div className={`rounded-lg border p-3 space-y-1 ${isDark ? 'border-white/10' : 'border-border'}`}>
+            <div className="flex items-center gap-1.5">
+              <Shield className="h-3 w-3 text-amber-500" />
+              <p className="text-[10px] text-muted-foreground">Recommended Kelly Size</p>
+            </div>
+            <p className="text-lg font-bold font-mono" style={{ color: Number(params.kellyPct) > 0 ? '#22c55e' : '#ef4444' }}>
+              {params.kellyPct}%
+            </p>
+            <p className="text-[10px] text-muted-foreground">
+              {Number(params.kellyPct) > 0
+                ? `Allocate ${params.kellyPct}% of capital per trade (half-Kelly: ${(Number(params.kellyPct) / 2).toFixed(1)}%)`
+                : 'No position recommended — strategy lacks positive edge'
+              }
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ====== TRADE OUTCOME WATERFALL CHART ======
+
+function TradeWaterfallChart({ data, isDark = false }: { data: BacktestData; isDark?: boolean }) {
+  const cc = isDark ? DARK_CHART_COLORS : LIGHT_CHART_COLORS;
+
+  const waterfallData = useMemo(() => {
+    const trades = data.recent_trades;
+    const last20 = trades.slice(-20);
+
+    // Build running equity array without mutation inside map
+    const results: { tradeNum: string; contribution: number; runningEquity: number; isWin: boolean }[] = [];
+    let equity = 0;
+
+    for (let i = 0; i < last20.length; i++) {
+      const trade = last20[i];
+      const isWin = trade.win_prob > 0.5 || trade.pnl_pct > 0;
+      const contribution = isWin ? Math.abs(trade.pnl_pct) : -Math.abs(trade.pnl_pct);
+      equity += contribution;
+
+      results.push({
+        tradeNum: `#${i + 1}`,
+        contribution,
+        runningEquity: equity,
+        isWin,
+      });
+    }
+
+    return results;
+  }, [data]);
+
+  return (
+    <ChartCard title="Trade Outcome Waterfall" subtitle="Sequential P&L contribution of last 20 trades" gradientFrom="green" gradientTo="red" isDark={isDark} badge={{ text: '20 trades', color: '#f59e0b' }}>
+      <div className="h-56">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={waterfallData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={cc.grid} />
+            <XAxis dataKey="tradeNum" tick={{ fontSize: 9 }} stroke={cc.text} />
+            <YAxis tick={{ fontSize: 10 }} stroke={cc.text} label={{ value: 'P&L %', angle: -90, position: 'insideLeft', offset: 10, fontSize: 10, fill: cc.text }} />
+            <RechartsTooltip
+              content={<CustomChartTooltip isDark={isDark} formatter={(value: number, name: string) => {
+                if (name === 'contribution') return [`${value > 0 ? '+' : ''}${value.toFixed(2)}%`, value > 0 ? 'Win' : 'Loss'];
+                return [`${value.toFixed(2)}%`, 'Running Equity'];
+              }} />}
+            />
+            <ReferenceLine y={0} stroke={cc.text} strokeDasharray="2 2" />
+            <Bar dataKey="contribution" name="contribution" radius={[3, 3, 0, 0]}>
+              {waterfallData.map((entry, index) => (
+                <Cell key={index} fill={entry.isWin ? '#22c55e' : '#ef4444'} fillOpacity={0.8} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="flex items-center justify-center gap-6 mt-2 text-[10px] text-muted-foreground">
+        <div className="flex items-center gap-1.5">
+          <div className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: '#22c55e' }} />
+          <span>Win (TP hit)</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: '#ef4444' }} />
+          <span>Loss (SL hit)</span>
+        </div>
+      </div>
+    </ChartCard>
+  );
+}
+
 // ====== OVERVIEW TAB ======
 
 export function OverviewTab({ data, levelChartData, quarterChartData, monthlyChartData, equitySampled, drawdownData, adrDistributionData, currentAdr5, isDark = false }: {
@@ -373,12 +561,15 @@ export function OverviewTab({ data, levelChartData, quarterChartData, monthlyCha
       {/* Performance Score Card */}
       <PerformanceScoreCard data={data} drawdownPct={drawdownData.maxDrawdownPct} isDark={isDark} />
 
+      {/* Strategy Parameter Panel */}
+      <StrategyParameterPanel data={data} isDark={isDark} />
+
       {/* Volatility Regime */}
       <VolatilityRegime data={data} isDark={isDark} />
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <ChartCard title="Win Rate by Level" subtitle="Breakeven threshold: 33.3% for 2:1 R:R" gradientFrom="cyan" gradientTo="purple" isDark={isDark}>
+        <ChartCard title="Win Rate by Level" subtitle="Breakeven threshold: 33.3% for 2:1 R:R" gradientFrom="cyan" gradientTo="purple" isDark={isDark} badge={{ text: `${data.level_breakdown.length} levels` }}>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={levelChartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
@@ -470,6 +661,9 @@ export function OverviewTab({ data, levelChartData, quarterChartData, monthlyCha
       <TimeOfMonthChart data={data} isDark={isDark} />
 
       <SectionDivider isDark={isDark} />
+
+      {/* Trade Outcome Waterfall Chart */}
+      <TradeWaterfallChart data={data} isDark={isDark} />
 
       {/* Equity Curve */}
       <ChartCard title="Equity Curve (2% Risk Per Trade)" subtitle="Starting capital: $10,000" gradientFrom="amber" gradientTo="red" isDark={isDark}>
@@ -567,7 +761,7 @@ export function OverviewTab({ data, levelChartData, quarterChartData, monthlyCha
       <SectionDivider isDark={isDark} />
 
       {/* ADR Distribution Chart */}
-      <ChartCard title="ADR₅ Distribution" subtitle="Histogram of 5-day ADR values (current vs historical)" gradientFrom="cyan" gradientTo="green" isDark={isDark}>
+      <ChartCard title="ADR₅ Distribution" subtitle="Histogram of 5-day ADR values (current vs historical)" gradientFrom="cyan" gradientTo="green" isDark={isDark} badge={{ text: `${adrDistributionData.length} buckets` }}>
         <div className="h-56">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={adrDistributionData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>

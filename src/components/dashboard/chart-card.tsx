@@ -7,13 +7,14 @@ import { LIGHT_CHART_COLORS, DARK_CHART_COLORS } from './constants';
 // ====== CHART CARD ======
 
 // Chart card wrapper with gradient top border, glassmorphism, hover effects, and entrance animation
-export function ChartCard({ title, subtitle, children, gradientFrom = 'cyan', gradientTo = 'purple', isDark = false }: {
+export function ChartCard({ title, subtitle, children, gradientFrom = 'cyan', gradientTo = 'purple', isDark = false, badge }: {
   title: string;
   subtitle?: string;
   children: React.ReactNode;
   gradientFrom?: string;
   gradientTo?: string;
   isDark?: boolean;
+  badge?: { text: string; color?: string };
 }) {
   const gradientMap: Record<string, string> = {
     cyan: '#06b6d4',
@@ -53,9 +54,26 @@ export function ChartCard({ title, subtitle, children, gradientFrom = 'cyan', gr
         }}
       />
       <div className="p-5 space-y-4 relative" style={isDark ? { boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)' } : undefined}>
-        <div>
-          <h3 className="font-semibold text-sm">{title}</h3>
-          {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="font-semibold text-sm">{title}</h3>
+            {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
+          </div>
+          {badge && (
+            <motion.span
+              className="px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+              style={{
+                backgroundColor: `${badge.color || gradientMap[gradientFrom] || '#06b6d4'}15`,
+                color: badge.color || gradientMap[gradientFrom] || '#06b6d4',
+                borderColor: `${badge.color || gradientMap[gradientFrom] || '#06b6d4'}30`,
+              }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3, delay: 0.2, type: 'spring', stiffness: 300 }}
+            >
+              {badge.text}
+            </motion.span>
+          )}
         </div>
         {children}
         {/* Subtle gradient overlay at bottom */}
